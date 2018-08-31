@@ -1,0 +1,63 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@font-face {
+  font-family: "Icon-Font";
+  src: url("fonts/icomoon.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+
+.icon_btn::before {
+    font-family: "Icon-Font";
+}
+
+.ic_refresh::before {
+    content: "\e5d5";
+}
+.ic_search::before {
+    content: "\e8b6";
+}
+.ic_options::before {
+    content: "\e5d4"; /* more_vert */
+}
+.ic_save::before {
+    content: "\e161";
+}
+.ic_hide::before {
+    content: "\e8f5";
+}
+.ic_show::before {
+    content: "\e8f4";
+}
+.ic_collapse::before {
+    content: "\e5d6"; /* unfold_less */
+}
+.ic_play::before {
+    content: "\e037";
+}
+.ic_layers::before {
+    content: "\e53b";
+}
+.ic_checked::before {
+    content: "\e834";
+}
+.ic_unchecked::before {
+    content: "\e835";
+}
+.ic_disconnect::before {
+    content: "\e0db"; /* phonelink_erase */
+}

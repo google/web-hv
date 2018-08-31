@@ -1,0 +1,424 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#hview {
+    overflow: hidden;
+}
+
+.divider {
+    position: absolute;
+}
+
+.pcontainer label {
+    display : block;
+    line-height: 20px;
+    padding: 0 5px 0 25px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pcontainer {
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAoCAAAAAD89ATvAAAAEklEQVR4AWP8z8DAQGviK+0JALWVJzkO0woxAAAAAElFTkSuQmCC');
+}
+
+.pcontainer:first-child label {
+    padding-left: 0;
+}
+
+.pcontainer label.expandable {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 110%;
+    color: #263238;
+}
+
+.pcontainer span.star {
+    position: relative;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin: 0 2px 0 12px;
+    cursor: pointer;
+    float: left;
+}
+.pcontainer span.star:before, .pcontainer span.star:after {
+    position: absolute;
+    font-family: "Icon-Font";
+    font-size: 16px;
+    text-align: center;
+}
+
+.pcontainer span.star:before {
+    content: '\e83a';
+    opacity: 0.5;
+}
+
+.pcontainer span.star:after {
+    content: '\e838';
+    opacity: 0;
+    transform: scale(0, 0);
+    transition: all .2s cubic-bezier(0, 1.4, 1, 1.4);
+}
+.pcontainer span.star.selected:after {
+    opacity: 1;
+    transform: none;
+}
+
+#p_name b {
+    color: var(--filter-color);
+    font-weight: 900;
+}
+
+#border-box {
+    overflow: hidden;
+    background-size: 100% 100%;
+}
+#border-box div {
+    background-size: 100% 100%;
+    position: absolute;
+    box-sizing: border-box;
+    z-index: 1;
+}
+
+#border-box.hide-my-bg div {
+    box-shadow: 0 0 0 1px #ddd inset;
+}
+
+#border-box.force-no-bg div, #border-box.hide-my-bg {
+    background-image: none !important;
+}
+
+#border-box div.hover {
+    box-shadow: 0 0 0 1px #0277BD inset;
+    z-index: 2000;
+}
+
+#border-box div.selected {
+    box-shadow: 0 0 0 1px #F44336 inset;
+    z-index: 1000;
+}
+
+
+#image-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #FFF;
+    z-index: 5000;
+    background-size: contain;
+    background-position: center;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+#sshot {
+ background:#fff;
+}
+
+#sshot.dark-bg , #image-preview.dark-bg {
+    background-color: #424242;
+}
+
+
+/********** Right section titles ********************/
+.right-title {
+    min-height: 30px;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    display:flex;
+    position: relative
+}
+
+#hview .search-clear {
+    position: absolute;
+    right: 0;
+    width: 30px;
+}
+
+
+.preview-disabled {
+    color: #B71C1C;
+}
+
+#pList .right-title::before {
+    font-size: 120%;
+    position: absolute;
+    padding-left: 10px;
+}
+
+#pList .right-title {
+    line-height: 30px;
+    background: var(--title-color);
+    border-radius: 5px 5px 0 0;
+    color: #FFF;
+}
+
+#pfilter {
+    padding: 0 30px;
+    flex: 1;
+    color: #FFF;
+}
+
+#pfilter::-webkit-input-placeholder {
+    color: #FFF;
+    font-weight: 500;
+}
+
+/********** View search ********************/
+#view-search {
+    color: #333;
+    flex: 1;
+    font-size: 100%;
+    border-radius: 5px;
+    padding: 0 30px;
+    transition: box-shadow 150ms ease-out;
+    height: 30px;
+}
+#view-search:focus {
+    box-shadow: 0 0 0px 2px var(--selected-color);
+}
+#view-search::-webkit-input-placeholder {
+    color: #777;
+    font-weight: bold;
+}
+
+#view-search-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+    line-height: 30px;
+}
+#view-search-container::before {
+    font-size: 120%;
+    position: absolute;
+    padding-left: 10px;
+}
+
+/********** Custom methods ********************/
+#custom-command-wrapper {
+    position: absolute;
+    right: 0;
+    display: flex;
+    line-height: 30px;
+    height: 30px;
+    visibility: hidden;
+}
+#custom-command-wrapper::before {
+    position: absolute;
+    left: 10px;
+    color: #777;
+}
+
+#custom-command-input {
+    padding: 0 33px;
+    overflow: hidden;
+    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.3);
+    border-radius: 5px;
+    flex: 1;
+    background: #FFF;
+}
+#custom-command-input:focus {
+    box-shadow: 0 0 0px 2px var(--selected-color);
+}
+
+#custom-command-input::-webkit-input-placeholder {
+    color: #777;
+    font-weight: bold;
+}
+
+#custom-command-wrapper .search-clear {
+    visibility: inherit !important;
+}
+
+/* switch mode with animation */
+.custom-command-mode #view-search-container, .custom-command-mode #btn-custom-command {
+    display: none !important;
+}
+
+.custom-command-mode #custom-command-wrapper {
+    visibility: visible;
+    -webkit-animation:custom-command-expand 150ms;
+    -webkit-animation-fill-mode: forwards;
+}
+
+@-webkit-keyframes custom-command-expand {
+    0% {
+        width: 155px;
+    }
+    100% {
+        width: 100%;
+    }
+}
+
+.custom-command-closed-mode #custom-command-wrapper {
+    -webkit-animation:custom-command-collapsed 150ms;
+    -webkit-animation-fill-mode: forwards;
+}
+
+@-webkit-keyframes custom-command-collapsed {
+    0% {
+        visibility: visible;
+        width: 100%;
+    }
+    100% {
+        width: 155px;
+        visibility: hidden;
+    }
+}
+
+#hview-error-box .error {
+    background: #FFF;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+.frame {
+    background: #f9f9f9;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    box-sizing: border-box;
+    flex-direction: column;
+    display: flex;
+}
+
+#vlist_content {
+    overflow: auto;
+    padding: 10px;
+    position: absolute;
+    left: 0px;
+    top:40px;
+    bottom: 0px;
+    padding-top:5px;
+    width: calc(100% - 20px);
+}
+
+x-profile {
+    display: inline-block;
+    padding: 0 10px;
+}
+
+x-profile a {
+    display: inline-block;
+    font-size: 10px;
+    width: 15px;
+    text-align: center;
+    height: 15px;
+    line-height: 15px;
+    border: 1px solid;
+    margin-right: 2px;
+    border-radius: 15px;
+    background: #90A4AE;    
+}
+
+x-profile a.green {
+    background: #AED581;
+}
+
+x-profile a.yellow {
+    background: #FBC02D;
+}
+
+x-profile a.red {
+    background: #EF5350;
+}
+
+#profile-info {
+    display: none;
+    background: rgba(33, 33, 33, 0.9);
+    position: absolute;
+    padding: 10px;
+    color: #f6f6f6;
+    border-radius: 3px;
+    line-height: 20px;
+    box-shadow: 0px 2px 5px 2px rgba(0, 0, 0, .4);
+    bottom: 15px;
+    left: 5px;
+}
+
+#hviewtabs {
+    display: none;
+}
+
+@media screen and (max-width: 550px) {
+    .divider {
+        display:none;
+    }
+
+    #properties-divider {
+        display: block;
+    }
+
+    #rcontent {
+        width: 100% !important;
+        display: none;
+    }
+
+    #vlist {
+        left:0px !important;
+        top: 40px !important;
+        right: 0px !important;
+        bottom: 0px !important;
+    }
+
+    #sshot, #vlist, #pList {
+        display: none;
+    }
+
+    #sshot.showAsTab, #vlist.showAsTab, #pList.showAsTab, #rcontent.showAsTab {
+        display: block;
+    }
+
+    #pList .right-title {
+        border-radius: 0px;
+    }
+
+    .frame {
+        top: 40px !important;
+        bottom: 0px !important;
+        height: auto !important;
+        right: 0px !important;
+        box-shadow: none;
+        border-radius: 0px;
+    }
+
+    #hviewtabs {
+        display: flex;
+        position: absolute;
+        width: 100%;
+        height: 40px;
+        line-height: 40px;
+        background: #ddd;
+        font-size: 16px;
+    }
+
+    #hviewtabs div {
+        display: block;
+        flex: 1;
+        text-align: center;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    #hviewtabs div.selected {
+        background: var(--title-color);
+        color: #FFF;
+    }
+  }

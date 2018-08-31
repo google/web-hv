@@ -1,0 +1,159 @@
+<!--
+  Copyright 2018 Google LLC
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <title>Web Hierarchy Viewer</title>
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="shortcut icon" type="image/png" href="icon.png" />
+
+    <link href="css/icons.css" rel="stylesheet" />
+    <link href="css/auto-complete.css" rel="stylesheet" />
+    <link href="css/components.css" rel="stylesheet" />
+
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="css/dlist.css" rel="stylesheet" />
+    <link href="css/hview.css" rel="stylesheet" />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="third_party/crypto.min.js"></script>
+    <script src="third_party/auto-complete.min.js"></script>
+    <script src="third_party/jszip.min.js"></script>
+
+    <script src="js/constants.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/adb/adb_msg.js"></script>
+    <script src="js/adb/crypto.js"></script>
+    <script src="js/adb/adb.js"></script>
+    <script src="js/ddmlib/ddmclient.js"></script>
+    <script src="js/ddmlib/jdwp.js"></script>
+    <script src="js/ddmlib/DataOutputStream.js"></script>
+    <script src="js/ddmlib/DataInputStream.js"></script>
+
+    <script src="js/activity_list.js"></script>
+    <script src="js/hview.js"></script>
+
+    <script src="js/index.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+</head>
+
+<body>
+
+    <div class="progress-line" id="main-progress" style="display:none"></div>
+    <!-- Main Content -->
+    <div id="content">
+
+        <div id="device-list-content">
+            <div id="start-screen">
+                <button id="hierarchy-picker">Open hierarchy file</button>
+                <input id="hierarchy-picker-input" type="file" name="name" style="display: none;" accept=".zip" /> or
+                <button id="device-picker">Select a device</button>
+                <i>Selecting a device will kill existing ADB connections</i>
+            </div>
+        </div>
+
+        <!-- Hierarchy View -->
+        <div id="hview" class="content-panel hide hidden">
+            <!-- Main panel -->
+            <div class="frame showAsTab" id="vlist" style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
+                <!-- Search and custom command -->
+                <div style="height: 30px; top:5px; left:5px; right:5px; position:absolute; display:flex; flex-wrap: nowrap;">
+                    <div id="view-search-container" class="icon_btn ic_search">
+                        <input type="input" id="view-search" class="search-bar" placeholder="Search node" />
+                        <a class="search-clear"></a>
+                    </div>
+                    <button style="margin-left: 12px; display: inline-block; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;" class="ic_play icon_btn" id="btn-custom-command">Command</button>
+                    <button style="margin-left:12px; width: 35px" title="More options" class="ic_options icon_btn" id="btn-options"></button>
+
+                    <div id="custom-command-wrapper" class="ic_play icon_btn">
+                        <input type="input" id="custom-command-input" class="search-bar" placeholder="Custom command" />
+                        <a class="search-clear"></a>
+                    </div>
+                </div>
+
+                <div id="vlist_content" class="treeview"></div>
+                <div id="hview-error-box" style="position:absolute; top: 40px; left: 5px; right: 5px;"></div>
+            </div>
+            <div style="right:300px;width:10px;top:0;bottom:0;cursor:ew-resize" class="divider" control="pageX,right,width" id="main-contnt-divider"></div>
+
+            <!-- Right content -->
+            <div style="position:absolute;width:300px;top:0;bottom:0;right:0" limit="150" id="rcontent">
+
+                <!-- Properties -->
+                <div class="frame" id="pList" style="position:absolute;left:0px;top:10px;bottom:220px;right:10px;font-size:80%;" limit="200">
+                    <div class="right-title icon_btn ic_search">
+                        <input type="input" id="pfilter" class="search-bar" placeholder="Properties" />
+                        <a class="search-clear"></a>
+                    </div>
+                    <!-- Properties table -->
+                    <div style="position:absolute; left: 2px;right:2px;top:30px;bottom:2px;overflow:auto">
+                        <div id="p_name" style="position:absolute;left:0px;top:0px;right:100px" limit="100" class="pcontainer"></div>
+                        <div style="right:78px;width:42px;top:0px;cursor:ew-resize;z-index:4" class="divider" control="pageX,right,width" id="properties-divider">
+                            <div style="background: #999;width: 2px; right: 20px; top: 0px; bottom: 0px;position: absolute;"></div>
+                        </div>
+                        <div id="p_val" style="position:absolute;top:0px;right:0px;width:98px" limit="80" class="pcontainer"></div>
+                    </div>
+
+                </div>
+
+                <div style="bottom:210px;height:10px;left:0;right:0;cursor:ns-resize" class="divider" control="pageY,bottom,height" id="right-panel-divider"></div>
+
+                <!-- Screenshot -->
+                <div class="frame" id="sshot" style="position:absolute;left:0px;height:200px;bottom:10px;right:10px;font-size:80%;" limit="150">
+                    <div class="right-title">
+                        <div class="dropdown" style="width:70px">
+                            <select id="preview_modes">
+                                <option value="0">Grid</option>
+                                <option value="1">Image</option>
+                                <option value="2">Both</option>
+                                <option selected="selected" value="3">App</option>
+                            </select>
+                        </div>
+                        <div style="flex:1"></div>
+                        <div class="dropdown" style="width:70px">
+                            <select id="preview_back">
+                                <option selected="selected" value="0">Light</option>
+                                <option value="1">Dark</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="box-border-container" style="position:absolute;left:2px;right:2px;top:33px;bottom:3px">
+                        <div id="border-box" style="position:absolute" class="force-no-bg"></div>
+                        <div id="image-preview" style="display:none"></div>
+                    </div>
+                </div>
+
+                <!-- Profile Info -->
+                <div id="profile-info">
+                    <div>Measure :
+                        <span id="profile-info-m">sdsd</span> ms</div>
+                    <div>Layout :
+                        <span id="profile-info-l">sdsd</span> ms</div>
+                    <div>Draw :
+                        <span id="profile-info-d">sdsd</span> ms</div>
+                </div>
+            </div>
+
+            <div id="hviewtabs">
+                <div class="selected" target="#vlist">View tree</div>
+                <div target="#pList, #rcontent">Properties</div>
+                <div target="#sshot, #rcontent">Preview</div>
+            </div>
+        </div>
+</body>

@@ -1,0 +1,85 @@
+/*
+ * Copyright 2018 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@font-face {
+  font-family: "Roboto";
+  src: url("fonts/Roboto-Regular.ttf");
+  font-weight: 400;
+}
+
+:root {
+    --title-color: #4CAF50;
+    --title-size: 0px;
+
+    --selected-color: #3b99fc;
+    --selected-color2: #BBDEFB;
+
+    --filter-color: #E65100;
+
+    --progress-color: #388E3C;
+    --error-color: #F44336;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #f2f2f2;
+    font-family: Roboto, 'Open Sans', sans-serif;
+    color: #333;
+    font-size: 14px;
+}
+
+#start-screen {
+    padding: 40px;
+    text-align: center;
+}
+
+#start-screen button {
+    font-size: 20px;    
+    line-height: 60px;
+    height: 60px;
+    display: block;
+    margin: 20px auto;
+    font-weight: normal;
+}
+
+#main-progress {
+    position: absolute;
+    top: var(--title-size);
+}
+
+#main-progress:before {
+    z-index: 1;
+}
+
+#content {
+    position: absolute;
+    width: 100%;
+    top: var(--title-size);
+    bottom: 0px;
+}
+
+
+.toast {
+    background: #333;
+    color: #FFF;
+    padding: 10px;
+    display: block;
+    position: absolute;
+    top: 80px;
+    right: 10px;
+    opacity: 0;
+}
