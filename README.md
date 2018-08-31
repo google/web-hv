@@ -18,3 +18,6 @@ See CONTRIBUTING.md on how to submit patches.
 - Inspect ui of running apps (debug apps)
 - Run commands on view nodes and change properties at runtime
 - Save hierarcy to disk for offline viewing and sharing
+
+
+This is not an officially supported Google product
