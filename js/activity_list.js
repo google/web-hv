@@ -44,6 +44,13 @@ var activityListAction = function (initializer) {
             var l = list[i];
             var entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 
+            if (list.hasIcons) {
+                var icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
+                if (l.icon && l.icon.value) {
+                    icon.css("background-image", `url(${l.icon.value})`);
+                }
+            }
+
             if (l.name == "") {
                 l.name = "---";
             }
@@ -83,6 +90,10 @@ var activityListAction = function (initializer) {
             windowLoaded = true;
             progress.hide();
             renderActivities(mainContent.empty(), list);
+        },
+
+        iconLoaded: function(pid, value) {
+            $(`div[icon-pid=${pid}]`).css("background-image", `url(${value})`);
         }
     };
 

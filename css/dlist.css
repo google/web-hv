@@ -56,12 +56,23 @@
 .activity-list .title {
     font-weight: bold;
     margin-bottom: 4px;
+    line-height: 16px;
 }
 
 .activity-list .subtext {
     color: #999;
     display: inline-block;
     padding-right: 15px;
+    line-height: 16px;
+}
+
+.activity-list .icon {
+    width: 36px;
+    height: 36px;
+    float: left;
+    margin-right: 8px;
+    background: url(app_icon.png) no-repeat center center;
+    background-size: 100%;
 }
 
 .old-api {

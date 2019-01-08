@@ -930,7 +930,7 @@ $(function () {
     }
 
     var loadSuggestions = async function (device) {
-        await device.sendFile("/data/local/tmp/methods.jar", "methods.jar");
+        await device.sendFile("/data/local/tmp/methods.jar", "commands/methods.jar");
         var response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
         response = JSON.parse(response.split("\n", 2)[1]);
 

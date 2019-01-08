@@ -23,6 +23,7 @@ function DDMClient(device, callbacks) {
     this.processNameErrorCount = 0;
     this.processCount = 0;
 
+    this.iconLoader = device.sendFile("/data/local/tmp/processicon.jar", "commands/processicon.jar");
     this.loadProp("density", "ro.sf.lcd_density");
     this.loadProp("sdk_version", "ro.build.version.sdk");
 }
@@ -162,7 +163,7 @@ DDMClient.prototype.reloadWindows = async function () {
     var windowToIdMap = {};
 
     for (var pid in this.processCache) {
-        this._loadWindowsForPid(pid, myCount, windowToIdMap);
+        this._loadWindowsForPid(pid, myCount, windowToIdMap).catch(e => {});
     }
 }
 
@@ -186,6 +187,7 @@ DDMClient.prototype._newWindowLoaded = function (myCount, windowToIdMap) {
     });
 
     windowList.use_new_api = this.sdk_version >= 23;
+    windowList.hasIcons = true;
     this.callbacks.windowsLoaded(windowList);
 }
 
@@ -197,9 +199,21 @@ DDMClient.prototype._loadWindowsForPid = async function (pid, myCount, windowToI
     }
     var count = data.readInt();
     var windowList = [];
+
     for (var i = 0; i < count; i++) {
         var id = data.readStr();
         var name = id;
+
+        if (this.processCache[pid].icon == undefined) {
+            var iconGetter = this._getIconForPid(pid);
+            var that = this;
+            iconGetter.then(v =>  {
+                iconGetter.value = v
+                that.callbacks.iconLoaded(pid, v);
+            });
+            this.processCache[pid].icon = iconGetter;
+        }
+
         if (count == 1) {
             name = name.split("/")[0];
         } else {
@@ -214,11 +228,27 @@ DDMClient.prototype._loadWindowsForPid = async function (pid, myCount, windowToI
             sdk_version: this.sdk_version,
             name: name,
             use_new_api: this.sdk_version >= 23,
-            pname: this.processCache[pid].name
+            pname: this.processCache[pid].name,
+            icon: this.processCache[pid].icon
         });
     }
+
     windowToIdMap[pid] = windowList;
     this._newWindowLoaded(myCount, windowToIdMap);
+}
+
+DDMClient.prototype._getIconForPid = async function (pid) {
+    await this.iconLoader;
+    var response = (await this.device.shellCommand(
+        "export CLASSPATH=/data/local/tmp/processicon.jar;exec app_process /system/bin ProcessIcon " + pid)).split("\n", 2);
+    if ("OKAY" != response[0]) {
+        throw "Unable to fetch icon";
+    }
+    var r = createBlobFromDataUrl(response[1], "image/png");
+
+    // console.log("Loading icon for " + pid);
+
+    return r;
 }
 
 function createViewController(appInfo) {
@@ -368,18 +398,24 @@ function pickPngAndCrop(display, crop) {
                 ctx.drawImage(d, crop[0] * sx, crop[1] * sy, crop[2] * sx, crop[3] * sy, 0, 0, crop[2], crop[3]);
 
                 var dataurl = canvas.toDataURL();
-                var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-                while(n--){
-                    u8arr[n] = bstr.charCodeAt(n);
-                }
-                result.accept(createUrl(new Blob([u8arr], {type:mime})));
+                var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+                result.accept(createBlobFromDataUrl(arr[1], mime));
             });
 		}
 		reader.readAsArrayBuffer(file);
     });
     el.click();
     return result;
+}
+
+function createBlobFromDataUrl(dataUrl, mime) {
+    var bstr = atob(dataUrl);
+    var n = bstr.length;
+    var u8arr = new Uint8Array(n);
+    while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+    }
+    return createUrl(new Blob([u8arr], {type:mime}));
 }
 
 function searializeNode(root) {
