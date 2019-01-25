@@ -27,9 +27,13 @@ $(function () {
     var closedSections = {};
 
     // Load favorite properties
-    favoriteProperties = localStorage.favoriteProps;
-    if (!favoriteProperties || favoriteProperties.constructor != Array) {
-        favoriteProperties = [];
+    if (localStorage.favoriteProps) {
+        try {
+            var tmp = JSON.parse(localStorage.favoriteProps);
+            if (tmp && tmp.constructor == Array) {
+                favoriteProperties = tmp;
+            }
+        } catch(e) { }
     }
 
     // Create dividers
@@ -243,7 +247,7 @@ $(function () {
                 return value != name;
             });
         }
-        localStorage.favoriteProps = favoriteProperties;
+        localStorage.favoriteProps = JSON.stringify(favoriteProperties);
     }
 
     var propertySectionToggle = function (e) {
