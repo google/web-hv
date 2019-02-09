@@ -72,6 +72,10 @@ $(function () {
 			$("<label>").text("serial: " + d.serialNumber).appendTo(subText);
 		}
 	});
+
+	if (isDarkTheme()) {
+		switchTheme();
+	}
 })
 
 function verifiedDeviceClicked() {
@@ -150,4 +154,14 @@ function onDeviceStateChange(newState) {
 		client.loadOldWindows();
 		client.trackProcesses();
 	});
+}
+
+function switchTheme() {
+	var isDark = $(document.body).toggleClass("darkTheme").hasClass("darkTheme");
+	$("#darkThemeSwitch").text(isDark ? "Lights on" : "Lights off");
+	localStorage.isDarkTheme = isDark;
+}
+
+function isDarkTheme() {
+	return localStorage.isDarkTheme == "true";
 }

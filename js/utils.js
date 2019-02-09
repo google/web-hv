@@ -82,8 +82,9 @@ function showContext(menu, callback, e) {
   }
   var menuClickHandler = function() {
       if (!$(this).hasClass(CLS_DISABLED)) {
-          callback.call($(this).data("info"));
-          hideMenu();
+          if (!callback.call($(this).data("info"), $(this))) {
+            hideMenu();
+          };
       }
   };
 
@@ -124,19 +125,6 @@ function showContext(menu, callback, e) {
 
 function toast(msg) {
     var el = $("<div class=toast>").text(msg).appendTo($("#content")).animate({top: 10, opacity:1}).delay(5000).fadeOut(300, function() { $(this).remove(); });
-}
-
-function attachOptions(menu, callback) {
-    var optionsBtn = $("#btn-options").unbind("click");
-    if (!menu) {
-        optionsBtn.hide();
-        return;
-    }
-
-    optionsBtn.show().click(function() {
-        var offset = $(this).offset();
-        showContext(menu, callback, {pageX: offset.left, pageY: offset.top});
-    });
 }
 
 /**

@@ -58,6 +58,7 @@
     <!-- Main Content -->
     <div id="content">
 
+        <a id="darkThemeSwitch" style="display: block; cursor: pointer; position: absolute; right: 15px; top: 15px;" onclick="switchTheme()">Lights off</a>
         <div id="device-list-content">
             <div id="start-screen">
                 <button id="hierarchy-picker">Open hierarchy file</button>
@@ -115,25 +116,7 @@
 
                 <!-- Screenshot -->
                 <div class="frame" id="sshot" style="position:absolute;left:0px;height:200px;bottom:10px;right:10px;font-size:80%;" limit="150">
-                    <div class="right-title">
-                        <div class="dropdown" style="width:70px">
-                            <select id="preview_modes">
-                                <option value="0">Grid</option>
-                                <option value="1">Image</option>
-                                <option value="2">Both</option>
-                                <option selected="selected" value="3">App</option>
-                            </select>
-                        </div>
-                        <div style="flex:1"></div>
-                        <div class="dropdown" style="width:70px">
-                            <select id="preview_back">
-                                <option selected="selected" value="0">Light</option>
-                                <option value="1">Dark</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="box-border-container" style="position:absolute;left:2px;right:2px;top:33px;bottom:3px">
+                    <div id="box-border-container" style="position:absolute;left:2px;right:2px;top:3px;bottom:3px">
                         <div id="border-box" style="position:absolute" class="force-no-bg"></div>
                         <div id="image-preview" style="display:none"></div>
                     </div>
@@ -153,7 +136,7 @@
             <div id="hviewtabs">
                 <div class="selected" target="#vlist">View tree</div>
                 <div target="#pList, #rcontent">Properties</div>
-                <div target="#sshot, #rcontent">Preview</div>
+                <div target="#sshot, #rcontent" id="sshot-tab">Preview</div>
             </div>
         </div>
 </body>

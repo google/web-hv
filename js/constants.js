@@ -19,7 +19,6 @@ var CLS_SELECTED = "selected";
 var CLS_HOVER = "hover";
 var CLS_FORCE_NO_BG = "force-no-bg";
 var CLS_HIDE_MY_BG = "hide-my-bg";
-var CLS_DARK_BG = "dark-bg";
 var CLS_DISABLED = "disabled";
 var CLS_WITH_ARROW = "with_arrow";
 

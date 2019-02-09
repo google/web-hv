@@ -61,3 +61,12 @@
 .ic_disconnect::before {
     content: "\e0db"; /* phonelink_erase */
 }
+
+.ic_submenu::after {
+    content: "\e5c5";
+    transform: rotate(-90deg);
+    font-family: "Icon-Font";
+    float: right;
+    line-height: 27px;
+    font-size: 18px;
+}

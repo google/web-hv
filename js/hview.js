@@ -507,6 +507,7 @@ $(function () {
     hViewAction = function (appInfo) {
         $("#main-progress").show();
         $("#device-list-content").remove();
+        $("#darkThemeSwitch").remove();
         $("#hview").removeClass("hide");
 
         viewController = createViewController(appInfo);
@@ -555,30 +556,6 @@ $(function () {
         });
     }
     $("#rcontent, #sshot").on("resizing", resizeBoxView);
-
-    /********************************* Preview modes *********************************/
-    $("#preview_modes").change(function () {
-        switch ($(this).val()) {
-            case '0':  // only grid
-                $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
-                $("#image-preview").hide();
-                break;
-            case '1': // Only image
-                $("#image-preview").show();
-                break;
-            case '2': // both
-                $("#image-preview").hide();
-                $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
-                break;
-            case '3': // App view
-                $("#image-preview").hide();
-                $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG);
-                break;
-        }
-    });
-    $("#preview_back").change(function () {
-        $("#sshot, #image-preview, #sshot .dropdown")[($(this).val() == "1") ? "addClass" : "removeClass"](CLS_DARK_BG);
-    })
 
     /** ********************** Box hover handling ***************** */
     var scrollToNode = function (node) {
@@ -952,12 +929,17 @@ $(function () {
     };
 
     /** ********************** Main Menu ********************** */
-    var updateOptionsMenu = function () {
+    $("#btn-options").click(function() {
         var menu = [
             {
                 text: "Show hidden node",
                 icon: showHiddenNodes ? "ic_checked" : "ic_unchecked",
                 id: 0
+            },
+            {
+                text: "Dark theme",
+                icon: isDarkTheme() ? "ic_checked" : "ic_unchecked",
+                id: 5
             },
             null,
             {
@@ -971,6 +953,14 @@ $(function () {
                 id: 2
             }
         ];
+        if (!$("#hviewtabs").is(":visible")) {
+            // Only show the preview menu when tabs are not available
+            menu.unshift({
+                text: "Preview",
+                icon: "ic_submenu",
+                id: 6
+            });
+        }
 
         if (viewController.loadScreenshot) {
             menu.push(null, {
@@ -988,31 +978,92 @@ $(function () {
             })
         }
 
-        attachOptions(menu, function () {
-            if (this.id == 0) {
-                showHiddenNodes = !showHiddenNodes;
-                showHiddenNodeOptionChanged();
-            } else if (this.id == 1) {
-                saveHierarchy();
-            } else if (this.id == 2) {
-                hViewAction(currentAppInfo);
-            } else if (this.id == 3) {
-                if (adbDevice) {
-                    adbDevice.disconnect();
-                }
-                updateOptionsMenu();
-            } else if (this.id == 4) {
-                viewController.loadScreenshot().then(url => {
-                    currentRootNode.imageUrl = url;
-                    $("#border-box").css('background-image', 'url("' + url + '")');
-                    if (currentRootNode.box.hasClass(CLS_SELECTED)) {
-                        currentRootNode.box.css('background-image', 'url("' + url + '")');
-                        $("#image-preview").empty().css('background-image', 'url("' + url + '")');
+        var offset = $(this).offset();
+        showContext(menu, function (el) {
+            switch(this.id) {
+                case 0:
+                    showHiddenNodes = !showHiddenNodes;
+                    showHiddenNodeOptionChanged();
+                    break;
+                case 1:
+                    saveHierarchy();
+                    break;
+                case 2:
+                    hViewAction(currentAppInfo);
+                    break;
+                case 3:
+                    if (adbDevice) {
+                        adbDevice.disconnect();
                     }
-                });
+                    break;
+                case 4:
+                    viewController.loadScreenshot().then(url => {
+                        currentRootNode.imageUrl = url;
+                        $("#border-box").css('background-image', 'url("' + url + '")');
+                        if (currentRootNode.box.hasClass(CLS_SELECTED)) {
+                            currentRootNode.box.css('background-image', 'url("' + url + '")');
+                            $("#image-preview").empty().css('background-image', 'url("' + url + '")');
+                        }
+                    });
+                    break;
+                case 5:
+                    switchTheme();
+                    break;
+                case 6:
+                    var submenuOffset = el.addClass(CLS_SELECTED).offset();
+                    showPreviewContext({pageX: submenuOffset.left + el.width() / 2, pageY: submenuOffset.top + el.height() / 4})
+                    return true;    // Dont ide te existing popup
             }
-        });
-    }
+        },
+        {pageX: offset.left, pageY: offset.top});
+    });
+
+    var currentPreviewMode = 3;
+    var showPreviewContext = function(e) {
+        var menu = [
+            {
+                text: "Grid",
+                icon: currentPreviewMode == 0 ? "ic_checked" : "ic_unchecked",
+                id: 0
+            },
+            {
+                text: "Image",
+                icon: currentPreviewMode == 1 ? "ic_checked" : "ic_unchecked",
+                id: 1
+            },
+            {
+                text: "Both",
+                icon: currentPreviewMode == 2 ? "ic_checked" : "ic_unchecked",
+                id: 2
+            },
+            {
+                text: "App",
+                icon: currentPreviewMode == 3 ? "ic_checked" : "ic_unchecked",
+                id: 3
+            }
+        ];
+        showContext(menu, function () {
+            switch (this.id) {
+                case 0:  // only grid
+                    $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+                    $("#image-preview").hide();
+                    break;
+                case 1: // Only image
+                    $("#image-preview").show();
+                    break;
+                case 2: // both
+                    $("#image-preview").hide();
+                    $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+                    break;
+                case 3: // App view
+                    $("#image-preview").hide();
+                    $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG);
+                    break;
+            }
+            currentPreviewMode = this.id;
+        }, e);
+    };
+    $("#sshot-tab").bind("contextmenu", showPreviewContext);
 
     /** ********************** Show/hide hidden nodes ********************** */
     // Hides the hode and all its children recursively.
@@ -1035,9 +1086,7 @@ $(function () {
         } else {
             hideNode(currentRootNode);
         }
-        updateOptionsMenu();
     }
-
 
     /** ********************** Save hierarchy ********************** */
     var saveHierarchy = async function () {

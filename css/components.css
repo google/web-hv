@@ -22,7 +22,7 @@
   margin: 0;
 }
 .progress-line {
-  background-color: #E0E0E0;
+  background-color: var(--button-bg-color);
   display: -webkit-flex;
   display: flex;
 }
@@ -47,109 +47,22 @@
     color: var(--error-color);
 }
 
+/* Scroll bars */
 
-/* Drop down */
-/*
- * Copyright (c) 2012-2013 Thibaut Courouble
- * http://www.cssflow.com
- *
- * Licensed under the MIT License:
- * http://www.opensource.org/licenses/mit-license.php
- */
-.dropdown {
-  display: inline-block;
-  position: relative;
-  overflow: hidden;
-  height: 28px;
-  width: 150px;
-  background: #f2f2f2;
-  border: 1px solid;
-  border-color: white #f7f7f7 #f5f5f5;
-  border-radius: 3px;
-  background-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.06));
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
-.dropdown:before, .dropdown:after {
-  content: '';
-  position: absolute;
-  z-index: 2;
-  top: 9px;
-  right: 10px;
-  width: 0;
-  height: 0;
-  border: 4px dashed;
-  border-color: #888 transparent;
-  pointer-events: none;
+::-webkit-scrollbar-track {
+    background-color: var(--button-bg-color);
 }
-.dropdown:before {
-  border-bottom-style: solid;
-  border-top: none;
+::-webkit-scrollbar-thumb {
+    background-color: var(--subtext-color);
+    border-radius: 0px;
 }
-.dropdown:after {
-  margin-top: 7px;
-  border-top-style: solid;
-  border-bottom: none;
+::-webkit-scrollbar-corner {
+    background-color: var(--button-bg-color);
 }
-
-.dropdown select {
-  position: relative;
-  width: 130%;
-  margin: 0;
-  padding: 6px 8px 6px 10px;
-  height: 28px;
-  line-height: 14px;
-  font-size: 12px;
-  color: #62717a;
-  text-shadow: 0 1px white;
-  background: #f2f2f2;
-  background: rgba(0, 0, 0, 0) !important;
-  border: 0;
-  border-radius: 0;
-  -webkit-appearance: none;
-}
-.dropdown select:focus {
-  z-index: 3;
-  width: 100%;
-  color: #394349;
-  outline: 2px solid #49aff2;
-  outline: 2px solid -webkit-focus-ring-color;
-  outline-offset: -2px;
-}
-.dropdown select > option {
-  margin: 3px;
-  padding: 6px 8px;
-  text-shadow: none;
-  background: #f2f2f2;
-  border-radius: 3px;
-  cursor: pointer;
-}
-
-.dropdown.dark-bg {
-  background: #444;
-  border-color: #111 #0a0a0a black;
-  background-image: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.4));
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.1), 0 1px 1px rgba(0, 0, 0, 0.2);
-}
-.dropdown.dark-bg:before {
-  border-bottom-color: #aaa;
-}
-.dropdown.dark-bg:after {
-  border-top-color: #aaa;
-}
-.dropdown.dark-bg select {
-  color: #aaa;
-  text-shadow: 0 1px black;
-  /* Fallback for IE 8 */
-  background: #444;
-}
-.dropdown.dark-bg select:focus {
-  color: #ccc;
-}
-.dropdown.dark-bg select > option {
-  background: #444;
-  text-shadow: 0 1px rgba(0, 0, 0, 0.4);
-}
-
 
 /** Content panel animation **/
 .content-panel {
@@ -274,7 +187,7 @@ label.expandable.closed.with_arrow span:before {
 }
 .contextmenu {
     position: absolute;
-    background: #FFF;
+    background: var(--window-bg-color);
     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     font-size: 13px;
     left: 30px;
@@ -295,36 +208,34 @@ label.expandable.closed.with_arrow span:before {
     margin-right: 10px;
     float: left;
 }
-.contextmenu a:hover {
-    background: #f5f5f5;
+.contextmenu a:hover, .contextmenu a.selected {
+    background: var(--hover-bg-color);
 }
 .contextmenu a:active {
     color: var(--selected-color);
 }
 .contextmenu a.separator {
-    border-top: 1px solid #ebebeb;
+    border-top: 1px solid var(--divider-color);
 }
 
 .contextmenu a.disabled {
-    color: #aaa;
+    opacity: 0.5;
     background: none;
 }
 
-
 /** Simple button **/
 button {
-    background: none;
+    background: var(--button-bg-color);
     border: none;
     border-radius: 4px;
-    color: #333;
     line-height: 30px;
     height: 30px;
     padding: 0 20px;
-    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.3);
-    color: #777;
+    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.2);
     font-weight: bold;
     transition: color .1s , box-shadow .1s , transform .1s;
     outline: none;
+    color: var(--text-color);
 }
 button.icon_btn {
     padding-left: 0px;
@@ -336,16 +247,13 @@ button.icon_btn::before {
 }
 
 button:focus {
-    color: var(--selected-color);
-    box-shadow: 0 0 0 2px var(--selected-color);
+    box-shadow: 0 0 0 1px var(--selected-color);
 }
 
 button:hover {
-    color: var(--selected-color);
-    box-shadow: 0 0 3px 2px var(--selected-color);
+    box-shadow: inset 0 0 100px 100px var(--hover-bg-color), 0 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 button:active {
-    color: var(--selected-color);
-    box-shadow: 0 0 1px 2px var(--selected-color);
+    box-shadow: inset 0 0 100px 100px var(--hover-bg-color), 0 0 1px 2px rgba(0, 0, 0, 0.4);
     transform: scale(0.98);
 }

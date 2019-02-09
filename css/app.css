@@ -21,24 +21,49 @@
 }
 
 :root {
-    --title-color: #4CAF50;
     --title-size: 0px;
 
+    /* App Theme colors */
+    --title-color: #2196F3;
+    --progress-color: #1976D2;
+
     --selected-color: #3b99fc;
-    --selected-color2: #BBDEFB;
+    --selected-color2: rgba(59, 153, 252, 0.1);
 
     --filter-color: #E65100;
-
-    --progress-color: #388E3C;
     --error-color: #F44336;
+
+    /* Light and dark theme */
+    --window-bg-color: #f2f2f2;
+    --card-bg-color: #f9f9f9;
+    --button-bg-color: #F0f0f0;
+    --hover-bg-color: rgba(0, 0, 0, 0.05);
+
+    --divider-color: #cccccc;
+
+    --text-color: #333;
+    --subtext-color: #999999;
+    --title-text-color: #263238;
+}
+
+body.darkTheme {
+    --window-bg-color: #222222;
+    --card-bg-color: #424242;
+    --button-bg-color: #666;
+    --hover-bg-color: rgba(255, 255, 255, 0.1);
+    --divider-color: #666;
+
+    --text-color: #e5e5e5;
+    --subtext-color: #aaa;
+    --title-text-color: #FFF;
 }
 
 body {
     margin: 0;
     padding: 0;
-    background: #f2f2f2;
+    background: var(--window-bg-color);
     font-family: Roboto, 'Open Sans', sans-serif;
-    color: #333;
+    color: var(--text-color);
     font-size: 14px;
 }
 
@@ -71,7 +96,6 @@ body {
     top: var(--title-size);
     bottom: 0px;
 }
-
 
 .toast {
     background: #333;

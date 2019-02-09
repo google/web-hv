@@ -32,7 +32,7 @@
 }
 
 .pcontainer {
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAoCAAAAAD89ATvAAAAEklEQVR4AWP8z8DAQGviK+0JALWVJzkO0woxAAAAAElFTkSuQmCC');
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAoCAYAAADZn1szAAAAIUlEQVQokWNkYGCQYkACTAxoYFSAVAGW////DwZ3DCcBAKZ+A2mSkEeYAAAAAElFTkSuQmCC');
 }
 
 .pcontainer:first-child label {
@@ -43,7 +43,7 @@
     cursor: pointer;
     font-weight: bold;
     font-size: 110%;
-    color: #263238;
+    color: var(--title-text-color);
 }
 
 .pcontainer span.star {
@@ -119,7 +119,7 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: #FFF;
+    background-color: var(--card-bg-color);
     z-index: 5000;
     background-size: contain;
     background-position: center;
@@ -128,15 +128,6 @@
     box-sizing: border-box;
     padding: 10px;
 }
-
-#sshot {
- background:#fff;
-}
-
-#sshot.dark-bg , #image-preview.dark-bg {
-    background-color: #424242;
-}
-
 
 /********** Right section titles ********************/
 .right-title {
@@ -153,7 +144,6 @@
     right: 0;
     width: 30px;
 }
-
 
 .preview-disabled {
     color: #B71C1C;
@@ -185,7 +175,7 @@
 
 /********** View search ********************/
 #view-search {
-    color: #333;
+    color: var(--text-color);
     flex: 1;
     font-size: 100%;
     border-radius: 5px;
@@ -197,7 +187,7 @@
     box-shadow: 0 0 0px 2px var(--selected-color);
 }
 #view-search::-webkit-input-placeholder {
-    color: #777;
+    color: var(--subtext-color);
     font-weight: bold;
 }
 
@@ -225,7 +215,7 @@
 #custom-command-wrapper::before {
     position: absolute;
     left: 10px;
-    color: #777;
+    color: var(--subtext-color);
 }
 
 #custom-command-input {
@@ -234,14 +224,15 @@
     box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.3);
     border-radius: 5px;
     flex: 1;
-    background: #FFF;
+    background: var(--card-bg-color);
+    color: var(--text-color);
 }
 #custom-command-input:focus {
     box-shadow: 0 0 0px 2px var(--selected-color);
 }
 
 #custom-command-input::-webkit-input-placeholder {
-    color: #777;
+    color: var(--subtext-color);
     font-weight: bold;
 }
 
@@ -291,7 +282,7 @@
 }
 
 .frame {
-    background: #f9f9f9;
+    background: var(--card-bg-color);
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     box-sizing: border-box;
@@ -405,7 +396,7 @@ x-profile a.red {
         width: 100%;
         height: 40px;
         line-height: 40px;
-        background: #ddd;
+        background: var(--button-bg-color);
         font-size: 16px;
     }
 
@@ -420,5 +411,13 @@ x-profile a.red {
     #hviewtabs div.selected {
         background: var(--title-color);
         color: #FFF;
+    }
+
+    #sshot-tab::after {
+        content: "\e5c5";
+        font-family: "Icon-Font";
+        float: right;
+        font-size: 24px;
+        margin: 0 10px 0 0;
     }
   }
