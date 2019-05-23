@@ -877,7 +877,7 @@ $(function () {
                         p = parseFloat(p);
                         data.writeStr("F", true);
                         data.writeFloat(p);
-                    } else if (p.match(/^[+-]?\s*\d+$/)) {
+                    } else if (p.match(/^[+-]?(0x)?[0-9a-fA-F]+$/)) {
                         p = parseInt(p);
                         data.writeStr("I", true);
                         data.writeInt(p);
