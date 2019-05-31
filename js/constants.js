@@ -21,6 +21,8 @@ var CLS_FORCE_NO_BG = "force-no-bg";
 var CLS_HIDE_MY_BG = "hide-my-bg";
 var CLS_DISABLED = "disabled";
 var CLS_WITH_ARROW = "with_arrow";
+var CLS_MULTI_TOGGLE = "multi-toggle"
+var CLS_COLORWELL = "colorwell";
 
 var URL_LOADING = "_loading_";
 

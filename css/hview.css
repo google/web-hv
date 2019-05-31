@@ -290,6 +290,26 @@
     display: flex;
 }
 
+.colorwell {
+    display: none;
+    width: 0.9em;
+    height: 0.9em;
+    margin-left: 0.2em;
+    margin-bottom: -0.2em;
+    border: 1px solid #fff;
+    background-color: magenta; /* override this please */
+}
+.multi-toggle select {
+    background: transparent;
+    border: 1px solid #888;
+    color: #fff;
+    font-size: 100%;
+    width: 7em;
+}
+.multi-toggle option {
+    background: #333;
+}
+
 #vlist_content {
     overflow: auto;
     padding: 10px;
