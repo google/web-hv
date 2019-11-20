@@ -265,6 +265,21 @@ $(function () {
     }
 
     /********************************* Selecting a node *********************************/
+    var toHex = function(i, len) {
+        var s = i.toString(16);
+        if (s.length < len) {
+            s = "0000000000000000".slice(0, len - s.length) + s;
+        }
+        return s;
+    }
+
+    var argb2rgba = function(i) {
+        // ensure unsigned 32-bit int
+        var ui32 = (0xFFFFFFFF & i) >>> 0;
+        // take one down, pass it around
+        return (((ui32 & 0xFFFFFF) << 8) | (ui32 >>> 24));
+    }
+
     var selectNode = function () {
         if ($(this).hasClass(CLS_SELECTED)) return;
         $("#vlist_content .selected").removeClass(CLS_SELECTED);
@@ -306,20 +321,62 @@ $(function () {
             }
 
             var pName = $("<label>").append($("<span />").text(p.name)).appendTo(nSubHolder);
-            var value = p.value + "";
-            if (viewController.density > 0) {
-                if (value.match(/^[-]?\d+(\.\d+)?$/)) {
-                    var pixels = parseFloat(value);
-                    var dp = Math.round(pixels * 160 * 100 / viewController.density) / 100;
+            var value = "" + p.value;
 
-                    value = value + "  ( " + dp + " dp)";
+            var labelTag = $("<label>");
+
+            if (value == "") {
+                labelTag.html("&nbsp;");
+            } else {
+                var valueF = parseFloat(p.value);
+                var valueI = parseInt(p.value);
+                var colorWell = undefined;
+
+                if (!isNaN(valueF)) {
+                    // Numbers could mean any number (sorry) of things, so let's try to show 
+                    // some relevant interpretations, switchable via <option> drop-down.
+                    var selectTag = $("<select>").append($("<option>").text(value));
+                    if (viewController.density > 0) {
+                        var dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
+                        if (Math.abs(dp) < 10000) {
+                            // probably a reasonable dimension
+                            selectTag.append($("<option>").text(dp + " dp"));
+                        }
+                    }
+                    if (valueF == valueI) {
+                        var valueU = valueI >>> 0;
+                        var valueHex = "";
+                        if (p.name.search(/color$/i) >= 0) {
+                            valueHex = toHex(valueU, 8);
+                            selectTag.append(
+                                $("<option>").text("#" + valueHex)
+                            );
+                        } else {
+                            var valueHex = toHex(valueU);
+                            selectTag.append($("<option>").text("0x" + valueHex));
+                        }
+                        if (valueHex) {
+                            colorWell = $("<div>").addClass(CLS_COLORWELL);
+                            selectTag.change(() => {
+                                var myVal = "" + selectTag.val();
+                                if (myVal.startsWith("#")) {
+                                    var webColor = '#' + toHex(argb2rgba(valueU), 8);
+                                    colorWell.css('display', 'inline-block').css('background-color', webColor);
+                                } else {
+                                    colorWell.hide();
+                                }
+                            })
+                        }
+                    }
+                    labelTag.addClass(CLS_MULTI_TOGGLE).append(selectTag);
+                    if (colorWell) labelTag.append(colorWell);
+                } else {
+                    labelTag.text(value);
                 }
             }
-            if (value == "") {
-                $("<label>").html("&nbsp;").appendTo(vSubHolder);
-            } else {
-                $("<label>").text(value).appendTo(vSubHolder);
-            }
+
+            labelTag.appendTo(vSubHolder);
+
             return $("<span>").addClass("star").data("pname", p.fullname).prependTo(pName).click(toggleFavorite);
         }
 

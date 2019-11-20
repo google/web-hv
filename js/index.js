@@ -99,7 +99,7 @@ async function openAndClaimWithRetry(device) {
 	try {
 		await openAndClaim(device);
 	} catch (e) {
-		console.log("Error claiming, reset and try again", e);
+		console.log("Error claiming (is ADB authorized?) -- reset and try again", e);
 		await device.reset();
 		await openAndClaim(device);
 	}
