@@ -29,6 +29,7 @@ var TYPE_ZIP = 0;
 var TYPE_OLD = 1;
 var TYPE_JDWP = 2;
 var TYPE_BUG_REPORT = 3;
+var TYPE_BUG_REPORT_V2 = 4;  // Bug report with encoded view hierarchy
 
 
 var CMD_CONVERT_TO_STRING = 1;

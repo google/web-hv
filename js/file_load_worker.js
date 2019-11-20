@@ -27,9 +27,34 @@ self.onmessage = function(e) {
 
 async function handleLoadFile(reader) {
     var zip = new JSZip(reader.result);
-    var bugFile = zip.file(/^bugreport/);
-    if (bugFile != null && bugFile.length == 1) {
-        return loadBugFile(bugFile[0]);
+
+    // Try loading as bug report
+    {
+        var list = [];
+        var display_size = { };
+
+        // Check for visible_windows.zip
+        var viewDump = zip.file("visible_windows.zip");
+        if (viewDump != null) {
+            try {
+                var viewDumpZip = new JSZip(viewDump.asArrayBuffer());
+                for (x in viewDumpZip.files) {
+                    list.push({
+                        name: x,
+                        data: viewDumpZip.files[x].asUint8Array(),
+                        type: TYPE_BUG_REPORT_V2,
+                        display: display_size
+                    })
+                }
+            } catch (e) {
+                console.log("Error", e);
+            }
+        }
+
+        var bugFile = zip.file(/^bugreport/);
+        if (bugFile != null && bugFile.length == 1) {
+            return loadBugFile(bugFile[0], list, display_size);
+        }
     }
 
     var config = JSON.parse(zip.file("config.json").asText());
@@ -41,36 +66,35 @@ async function handleLoadFile(reader) {
     postMessage(appInfo);
 }
 
-async function loadBugFile(bugFile) {
-	var data = bugFile.asText();
-	var lines = data.split('\n');
+async function loadBugFile(bugFile, list, display_size) {
+    var data = bugFile.asText();
+    var lines = data.split('\n');
 
-	var list = [];
-	var count = lines.length - 1;
-	var display_size = { };
+    var count = lines.length - 1;
+    var searchLegacy = list.length == 0;
 
-	for (var i = 1; i < count; i++) {
-		var l = lines[i].trim();
-		if (l.startsWith("--encoded-view-dump-v0--")) {
-			list.push({
-				name: lines[i -1].trim(),
-				data: lines[i + 1],
-				type: TYPE_BUG_REPORT,
-				display: display_size
-			})
-		} else if (l.startsWith("Display:")) {
-			var match = / cur=(\d+)x(\d+) /.exec(lines[i + 1]);
-			if (match) {
-				display_size.width = parseInt(match[1]);
-				display_size.height = parseInt(match[2]);
+    for (var i = 1; i < count; i++) {
+        var l = lines[i].trim();
+        if (searchLegacy && l.startsWith("--encoded-view-dump-v0--")) {
+            list.push({
+                name: lines[i -1].trim(),
+                data: lines[i + 1],
+                type: TYPE_BUG_REPORT,
+                display: display_size
+            })
+        } else if (l.startsWith("Display:")) {
+            var match = / cur=(\d+)x(\d+) /.exec(lines[i + 1]);
+            if (match) {
+                display_size.width = parseInt(match[1]);
+                display_size.height = parseInt(match[2]);
             }
             match = / (\d+)dpi /.exec(lines[i + 1]);
             if (match) {
                 display_size.density = parseInt(match[1]);
             }
-		}
+        }
     }
-    
+
     if (list.length == 0) {
         throw "No hierarchy found";
     }

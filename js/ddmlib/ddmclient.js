@@ -268,6 +268,8 @@ function createViewController(appInfo) {
     } else if (appInfo.type == TYPE_OLD) {
         return new ViewServiceController(appInfo);
     } else if (appInfo.type == TYPE_BUG_REPORT) {
+        return new BugReportServiceControllerLegacy(appInfo);
+    } else if (appInfo.type == TYPE_BUG_REPORT_V2) {
         return new BugReportServiceController(appInfo);
     } else {
         return new JdwpController(appInfo);
@@ -302,80 +304,93 @@ function parseViewData(data, cmd, callback) {
 /**
  * Controller based on offline data
  */
-function OfflineServiceController(appInfo) {
-    this.zip = appInfo.data;
-    this.density = appInfo.config.density ? appInfo.config.density : -1;
-    this.sdk_version = appInfo.config.sdk_version ? appInfo.config.sdk_version : -1;
-    this.use_new_api = appInfo.config.use_new_api;
-}
-OfflineServiceController.prototype.loadViewList = function () {
-    var result = deferred();
-    var text = this.zip.file("hierarchy.txt").asText();
-    if (!text) {
-        result.reject("Unable to load data");
-    } else {
-        var cmd = CMD_PARSE_OLD_DATA;
-        if (!this.use_new_api) {
-            cmd = cmd | CMD_USE_PROPERTY_MAP;
-        }
-        parseViewData(text, cmd, result);
+class OfflineServiceController {
+    constructor(appInfo) {
+        this.zip = appInfo.data;
+        this.density = appInfo.config.density ? appInfo.config.density : -1;
+        this.sdk_version = appInfo.config.sdk_version ? appInfo.config.sdk_version : -1;
+        this.use_new_api = appInfo.config.use_new_api;
     }
-    return result;
+    loadViewList() {
+        var result = deferred();
+        var text = this.zip.file("hierarchy.txt").asText();
+        if (!text) {
+            result.reject("Unable to load data");
+        }
+        else {
+            var cmd = CMD_PARSE_OLD_DATA;
+            if (!this.use_new_api) {
+                cmd = cmd | CMD_USE_PROPERTY_MAP;
+            }
+            parseViewData(text, cmd, result);
+        }
+        return result;
+    }
+    async captureView(viewName) {
+        var file = this.zip.file("img/" + viewName + ".png");
+        if (!file) {
+            throw "Image not found";
+        }
+        return file.asUint8Array();
+    }
 }
 
-OfflineServiceController.prototype.captureView = async function (viewName) {
-    var file = this.zip.file("img/" + viewName + ".png");
-    if (!file) {
+
+class BugReportServiceController {
+    constructor(appInfo) {
+        this.data = appInfo.data;
+        this.use_new_api = true;
+        var display = appInfo.display;
+        this.display = null;
+        if (display.width != undefined && display.width > 0 && display.height != undefined && display.height > 0) {
+            this.display = display;
+            if (display.density > 0) {
+                this.density = display.density;
+            }
+        }
+    }
+
+    loadViewList_(result) {
+        parseViewData(this.data, 0, result);
+    }
+    loadViewList() {
+        var result = deferred();
+        this.loadViewList_(result);
+
+        if (this.display != null) {
+            var that = this;
+            result.then(node => {
+                if (node.windowX != undefined && node.windowY != undefined) {
+                    var crop = [node.windowX, node.windowY, node.width, node.height];
+                    that.loadScreenshot = function () {
+                        return pickPngAndCrop(that.display, crop);
+                    };
+                }
+            });
+        }
+        return result;
+    }
+
+    async captureView(viewName) {
         throw "Image not found";
     }
-    return file.asUint8Array();
 }
 
-function BugReportServiceController(appInfo) {
-    this.data = appInfo.data;
-    this.use_new_api = true;
+class BugReportServiceControllerLegacy extends BugReportServiceController {
+    constructor(appInfo) {
+        super(appInfo);
+    }
 
-    var display = appInfo.display;
-    this.display = null;
-    if (display.width != undefined && display.width > 0 && display.height != undefined && display.height > 0) {
-        this.display = display;
-        if (display.density > 0) {
-            this.density = display.density;
+    loadViewList_(result) {
+        var binary_string = atob(this.data);
+        var len = binary_string.length;
+        var bytes = new Uint8Array( len );
+        for (var i = 0; i < len; i++)        {
+            var ascii = binary_string.charCodeAt(i);
+            bytes[i] = ascii;
         }
+        parseViewData(bytes, CMD_DEFLATE_STRING, result);
     }
-}
-
-var base64toBinary = function (base64) {
-    var binary_string = atob(base64);
-    var len = binary_string.length;
-	var bytes = new Uint8Array( len );
-    for (var i = 0; i < len; i++)        {
-        var ascii = binary_string.charCodeAt(i);
-		bytes[i] = ascii;
-    }
-    return bytes;
-}
-
-BugReportServiceController.prototype.loadViewList = function () {
-    var result = deferred();
-    parseViewData(base64toBinary(this.data), CMD_DEFLATE_STRING, result);
-
-    if (this.display != null) {
-        var that = this;
-        result.then(node => {
-            if (node.windowX != undefined && node.windowY != undefined) {
-                var crop = [node.windowX, node.windowY, node.width, node.height];
-                that.loadScreenshot = function() {
-                   return pickPngAndCrop(that.display, crop);
-                };
-            }
-        })
-    }
-    return result;
-}
-
-BugReportServiceController.prototype.captureView = async function (viewName) {
-    throw "Image not found";
 }
 
 function pickPngAndCrop(display, crop) {
@@ -444,100 +459,92 @@ function searializeNode(root) {
 /**
  * Controller based on view service
  */
-function ViewServiceController(appInfo) {
-    this.id = appInfo.id;
-    this.port = appInfo.port;
-    this.density = appInfo.density;
-    this.sdk_version = appInfo.sdk_version;
-    this.use_new_api = false;
-    this.device = appInfo.device;
-}
-
-ViewServiceController.prototype.loadViewList = async function () {
-    var stream = this.device.openStream("tcp:4939");
-    stream.write("DUMP " + this.id + "\n");
-    var text = await stream.readAll();
-    var result = deferred();    
-    parseViewData(text, CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP, result);
-    return await result;
-}
-
-ViewServiceController.prototype.captureView = function (viewName) {
-    var stream = this.device.openStream("tcp:4939");
-    stream.write("CAPTURE " + this.id + " " + viewName + "\n");
-    return stream.readAll(new ByteResponseMerger());
-}
-
-ViewServiceController.prototype.profileView = function (viewName) {
-    var stream = this.device.openStream("tcp:4939");
-    stream.write("PROFILE " + this.id + " " + viewName + "\n");
-    return stream.readAll();
+class ViewServiceController {
+    constructor(appInfo) {
+        this.id = appInfo.id;
+        this.port = appInfo.port;
+        this.density = appInfo.density;
+        this.sdk_version = appInfo.sdk_version;
+        this.use_new_api = false;
+        this.device = appInfo.device;
+    }
+    async loadViewList() {
+        var stream = this.device.openStream("tcp:4939");
+        stream.write("DUMP " + this.id + "\n");
+        var text = await stream.readAll();
+        var result = deferred();
+        parseViewData(text, CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP, result);
+        return await result;
+    }
+    captureView(viewName) {
+        var stream = this.device.openStream("tcp:4939");
+        stream.write("CAPTURE " + this.id + " " + viewName + "\n");
+        return stream.readAll(new ByteResponseMerger());
+    }
+    profileView(viewName) {
+        var stream = this.device.openStream("tcp:4939");
+        stream.write("PROFILE " + this.id + " " + viewName + "\n");
+        return stream.readAll();
+    }
 }
 
 /**
  * Controller based on jdwp protocol
  */
-function JdwpController(appInfo) {
-    this.windowId = appInfo.id;
-    this.pid = appInfo.pid;
-    this.device = appInfo.device;
-    this.density = appInfo.density;
-    this.sdk_version = appInfo.sdk_version;
-    this.jdwp = new jdwp(this.pid, this.device);
-    this.use_new_api = appInfo.use_new_api;
-}
-
-JdwpController.prototype.loadViewList = async function () {
-    var req = new DataOutputStream();
-    req.writeInt(1);                // VURT_DUMP_HIERARCHY
-    req.writeStr(this.windowId);    // root view
-    req.writeInt(0);                // Do not skip children
-    req.writeInt(1);                // Include properties
-
-    var cmd = CMD_CONVERT_TO_STRING | CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP;
-    if (this.use_new_api) {
-        req.writeInt(1);                // Use v2
-        cmd = 0;
+class JdwpController {
+    constructor(appInfo) {
+        this.windowId = appInfo.id;
+        this.pid = appInfo.pid;
+        this.device = appInfo.device;
+        this.density = appInfo.density;
+        this.sdk_version = appInfo.sdk_version;
+        this.jdwp = new jdwp(this.pid, this.device);
+        this.use_new_api = appInfo.use_new_api;
     }
-    var reader = await this.jdwp.writeChunk("VURT", req);
-    throwIfFail(reader);    
-
-    var result = deferred();
-    parseViewData(reader.data, cmd, result);
-    return await result;
-}
-
-JdwpController.prototype.captureView = async function (viewName) {
-    var req = new DataOutputStream();
-    req.writeInt(1);                // VUOP_CAPTURE_VIEW
-    req.writeStr(this.windowId);    // root view
-    req.writeStr(viewName);         // target view
-
-    var reader = await this.jdwp.writeChunk("VUOP", req)
-    throwIfFail(reader);
-    return new Uint8Array(reader.data.buffer, 8);
-}
-
-JdwpController.prototype.profileView = async function(viewName) {
-    var req = new DataOutputStream();
-    req.writeInt(3);                // VUOP_PROFILE_VIEW
-    req.writeStr(this.windowId);    // root view
-    req.writeStr(viewName);         // target view
-
-    var reader = await this.jdwp.writeChunk("VUOP", req);
-    throwIfFail(reader);
-    return new TextDecoder().decode(new Uint8Array(reader.data.buffer, 8));
-}
-
-JdwpController.prototype.customCommand = async function (viewName, commandData) {
-    var req = new DataOutputStream();
-    req.writeInt(4);                // VUOP_INVOKE_VIEW_METHOD
-    req.writeStr(this.windowId);    // root view
-    req.writeStr(viewName);         // target view
-    req.writeBytes(commandData);
-
-    var reader = await this.jdwp.writeChunk("VUOP", req);
-    throwIfFail(reader);
+    async loadViewList() {
+        var req = new DataOutputStream();
+        req.writeInt(1); // VURT_DUMP_HIERARCHY
+        req.writeStr(this.windowId); // root view
+        req.writeInt(0); // Do not skip children
+        req.writeInt(1); // Include properties
+        var cmd = CMD_CONVERT_TO_STRING | CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP;
+        if (this.use_new_api) {
+            req.writeInt(1); // Use v2
+            cmd = 0;
+        }
+        var reader = await this.jdwp.writeChunk("VURT", req);
+        throwIfFail(reader);
+        var result = deferred();
+        parseViewData(reader.data, cmd, result);
+        return await result;
+    }
+    async captureView(viewName) {
+        var req = new DataOutputStream();
+        req.writeInt(1); // VUOP_CAPTURE_VIEW
+        req.writeStr(this.windowId); // root view
+        req.writeStr(viewName); // target view
+        var reader = await this.jdwp.writeChunk("VUOP", req);
+        throwIfFail(reader);
+        return new Uint8Array(reader.data.buffer, 8);
+    }
+    async profileView(viewName) {
+        var req = new DataOutputStream();
+        req.writeInt(3); // VUOP_PROFILE_VIEW
+        req.writeStr(this.windowId); // root view
+        req.writeStr(viewName); // target view
+        var reader = await this.jdwp.writeChunk("VUOP", req);
+        throwIfFail(reader);
+        return new TextDecoder().decode(new Uint8Array(reader.data.buffer, 8));
+    }
+    async customCommand(viewName, commandData) {
+        var req = new DataOutputStream();
+        req.writeInt(4); // VUOP_INVOKE_VIEW_METHOD
+        req.writeStr(this.windowId); // root view
+        req.writeStr(viewName); // target view
+        req.writeBytes(commandData);
+        var reader = await this.jdwp.writeChunk("VUOP", req);
+        throwIfFail(reader);
+    }
 }
 
 function throwIfFail(reader) {
