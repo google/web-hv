@@ -55,14 +55,24 @@ $(function () {
 	});
 
 	// Load any verified devices
-	navigator.usb.getDevices().then(devices => {
-		if (devices.length == 0) {
-			return;
-		}
-		let container = $("#device-list-content");
-		$("<h3>").text("Authorized devices").appendTo(container);
-		container = $("<div>").addClass("activity-list").appendTo(container);
+	refreshConnectedDevices();
+	navigator.usb.addEventListener("connect", refreshConnectedDevices);
+	navigator.usb.addEventListener("disconnect", refreshConnectedDevices);
+	ActiveState.push(function() {
+		navigator.usb.removeEventListener("connect", refreshConnectedDevices);
+		navigator.usb.removeEventListener("disconnect", refreshConnectedDevices);
+	});
 
+	if (isDarkTheme()) {
+		switchTheme();
+	}
+})
+
+function refreshConnectedDevices() {
+	navigator.usb.getDevices().then(devices => {
+		let container = $("#connected-devices");
+		container.empty();
+		$("#connected-devices-title")[devices.length == 0 ? "hide" : "show"]();
 		for (let i = 0; i < devices.length; i++) {
 			let d = devices[i];
 			let entry = $("<div>").data("device", d).appendTo(container).click(verifiedDeviceClicked).addClass("entry");
@@ -72,11 +82,7 @@ $(function () {
 			$("<label>").text("serial: " + d.serialNumber).appendTo(subText);
 		}
 	});
-
-	if (isDarkTheme()) {
-		switchTheme();
-	}
-})
+}
 
 function verifiedDeviceClicked() {
 	var d = $(this).data("device");
@@ -86,7 +92,7 @@ function verifiedDeviceClicked() {
 function handleSelectDevice(devicePromise) {
 	devicePromise.then(selectedDevice => {
 		progress.show();
-		return openAndClaimWithRetry(selectedDevice);
+		return openAndClaim(selectedDevice);
 	})
 		.catch(error => {
 			progress.hide();
@@ -95,21 +101,14 @@ function handleSelectDevice(devicePromise) {
 		});
 }
 
-async function openAndClaimWithRetry(device) {
-	try {
-		await openAndClaim(device);
-	} catch (e) {
-		console.log("Error claiming (is ADB authorized?) -- reset and try again", e);
-		await device.reset();
-		await openAndClaim(device);
-	}
-}
-
 var adbDevice;
 
 async function openAndClaim(device) {
 	console.debug("Opening device", device);
 	await device.open();
+	await device.reset();
+
+	await device.selectConfiguration(1);
 
 	// Find interface
 	var interface = null;
@@ -132,6 +131,7 @@ async function openAndClaim(device) {
 	await device.claimInterface(interface.interfaceNumber);
 	$(window).on('beforeunload', function () {
 		device.releaseInterface(interface.interfaceNumber);
+		device.close();
 	});
 	adbDevice = new AdbDevice(device, interface);
 	adbDevice.stateCallback = onDeviceStateChange;
