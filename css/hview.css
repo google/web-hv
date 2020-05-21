@@ -302,10 +302,14 @@
 .multi-toggle select {
     background: transparent;
     border: 1px solid #888;
-    color: #fff;
     font-size: 100%;
     width: 7em;
 }
+
+.darkTheme .multi-toggle select {
+    color: #fff;
+}
+
 .multi-toggle option {
     background: #333;
 }

@@ -23,6 +23,7 @@ $(function () {
     var favoriteProperties = [];
     var viewController;
     var showHiddenNodes = false;
+    var valueTypeMap = {};
 
     var closedSections = {};
 
@@ -32,6 +33,16 @@ $(function () {
             var tmp = JSON.parse(localStorage.favoriteProps);
             if (tmp && tmp.constructor == Array) {
                 favoriteProperties = tmp;
+            }
+        } catch(e) { }
+    }
+
+    // Load favorite properties
+    if (localStorage.valueTypeMap) {
+        try {
+            var tmp = JSON.parse(localStorage.valueTypeMap);
+            if (tmp && tmp.constructor == Object) {
+                valueTypeMap = tmp;
             }
         } catch(e) { }
     }
@@ -335,12 +346,12 @@ $(function () {
                 if (!isNaN(valueF)) {
                     // Numbers could mean any number (sorry) of things, so let's try to show 
                     // some relevant interpretations, switchable via <option> drop-down.
-                    var selectTag = $("<select>").append($("<option>").text(value));
+                    var selectTag = $(`<select name="${p.name}">`).append($("<option value='default'>").text(value));
                     if (viewController.density > 0) {
                         var dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
                         if (Math.abs(dp) < 10000) {
                             // probably a reasonable dimension
-                            selectTag.append($("<option>").text(dp + " dp"));
+                            selectTag.append($("<option value='size-dp'>").text(dp + " dp"));
                         }
                     }
                     if (valueF == valueI) {
@@ -349,11 +360,11 @@ $(function () {
                         if (p.name.search(/color$/i) >= 0) {
                             valueHex = toHex(valueU, 8);
                             selectTag.append(
-                                $("<option>").text("#" + valueHex)
+                                $("<option value='color-hex'>").text("#" + valueHex)
                             );
                         } else {
                             var valueHex = toHex(valueU);
-                            selectTag.append($("<option>").text("0x" + valueHex));
+                            selectTag.append($("<option value='falgs-hex'>").text("0x" + valueHex));
                         }
                         if (valueHex) {
                             colorWell = $("<div>").addClass(CLS_COLORWELL);
@@ -367,6 +378,11 @@ $(function () {
                                 }
                             })
                         }
+                        var valuePref = valueTypeMap[p.name];
+                        if (valuePref != undefined && selectTag.children().map(function() { return this.value; }).get().indexOf(valuePref) >= 0) {
+                            selectTag.val(valuePref);
+                        }
+                        selectTag.change(saveValueTypeSelect);
                     }
                     labelTag.addClass(CLS_MULTI_TOGGLE).append(selectTag);
                     if (colorWell) labelTag.append(colorWell);
@@ -406,6 +422,12 @@ $(function () {
         } else {
             loadImage(node);
         }
+    }
+
+    var saveValueTypeSelect = function() {
+        valueTypeMap[$(this).attr("name")] = $(this).val();
+        var data = JSON.stringify(valueTypeMap);
+        localStorage.valueTypeMap = data;
     }
 
     var profileInfoBox = $("#profile-info");
