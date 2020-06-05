@@ -18,6 +18,7 @@ var CMD_CONVERT_TO_STRING = 1;
 var CMD_PARSE_OLD_DATA = 2;
 var CMD_USE_PROPERTY_MAP = 4;
 var CMD_DEFLATE_STRING = 8;
+var CMD_SKIP_8_BITS = 16;
 
 var commonProps = null;
 
@@ -35,12 +36,15 @@ self.onmessage = function(e) {
     var cmd = msg.cmd;
     var data = msg.data;
 
-    var bitShift = 8;
+    var bitShift = 0;
 
     if ((cmd & CMD_DEFLATE_STRING) != 0) {
         importScripts("../../third_party/pako/pako_inflate.min.js");
         data = pako.inflate(data);
-        bitShift = 0;
+    }
+
+    if ((cmd & CMD_SKIP_8_BITS) != 0) {
+        bitShift = 8;
     }
 
     if ((cmd & CMD_CONVERT_TO_STRING) != 0) {

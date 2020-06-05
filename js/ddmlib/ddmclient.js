@@ -510,7 +510,7 @@ class JdwpController {
         var cmd = CMD_CONVERT_TO_STRING | CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP;
         if (this.use_new_api) {
             req.writeInt(1); // Use v2
-            cmd = 0;
+            cmd = CMD_SKIP_8_BITS;
         }
         var reader = await this.jdwp.writeChunk("VURT", req);
         throwIfFail(reader);
