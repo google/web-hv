@@ -40,6 +40,9 @@ var activityListAction = function (initializer) {
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
+        if (list.hasIcons) {
+            container.addClass("has-icons")
+        }
         for (var i = 0; i < list.length; i++) {
             var l = list[i];
             var entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");

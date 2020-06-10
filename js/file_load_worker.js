@@ -67,38 +67,172 @@ async function handleLoadFile(reader) {
 }
 
 async function loadBugFile(bugFile, list, display_size) {
-    var data = bugFile.asText();
-    var lines = data.split('\n');
+    if (list.length == 0) {
+        throw "No hierarchy found";
+    }
+    let liner = newLiner(bugFile.asArrayBuffer());
+    const PARSING_DATA = [
+        {
+            key: "windows",
+            header: "WINDOW MANAGER WINDOWS (dumpsys window windows)",
+            titleRegX: /^(\s+)Window \#\d+ Window\{([a-zA-Z\d]+) [a-zA-Z\d]+ ([^\}\s]+)\}\:/,
+            titleGroups: {
+                spaces: 1,
+                hashCode: 2,
+                name: 3,
+            },
 
-    var count = lines.length - 1;
-    var searchLegacy = list.length == 0;
-
-    for (var i = 1; i < count; i++) {
-        var l = lines[i].trim();
-        if (searchLegacy && l.startsWith("--encoded-view-dump-v0--")) {
-            list.push({
-                name: lines[i -1].trim(),
-                data: lines[i + 1],
-                type: TYPE_BUG_REPORT,
-                display: display_size
-            })
-        } else if (l.startsWith("Display:")) {
-            var match = / cur=(\d+)x(\d+) /.exec(lines[i + 1]);
-            if (match) {
-                display_size.width = parseInt(match[1]);
-                display_size.height = parseInt(match[2]);
+            entries: {
+                ownerUid: / mOwnerUid=(\d+) /,
+                display: / containing=\[\d+,\d+\]\[(\d+,\d+)\]/,
+                dpi: / mFullConfiguration=\{[^\}]*\b(\d+)dpi\b/
             }
-            match = / (\d+)dpi /.exec(lines[i + 1]);
-            if (match) {
-                display_size.density = parseInt(match[1]);
+        },
+        {
+            key: "packages",
+            header: "Packages:",
+            titleRegX: /^(\s+)Package \[([a-z\_A-Z\d\.\/]+)\] \(([a-zA-Z\d]+)\)\:/,
+            titleGroups: {
+                spaces: 1,
+                hashCode: 3,
+                name: 2,
+            },
+
+            entries: {
+                userId: / userId=(\d+)\b/
+            }
+        }
+    ]
+
+    // Parses a list of sections
+    function parseSectionList(parsingEntry) {
+        var match;
+        var result = [];
+        while (match = parsingEntry.titleRegX.exec(liner.next())) {
+            var section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
+
+            parseSection(section, match[parsingEntry.titleGroups.spaces], parsingEntry);
+            result.push(section);
+        }
+        return result;
+    }
+
+    function parseSection(output, spaces, parsingEntry) {
+        while(liner.peek() != null && liner.peek().startsWith(spaces + " ")) {
+            let line = liner.next();
+            let match;
+            for (let [key, value] of Object.entries(parsingEntry.entries)) {
+                if (match = value.exec(line)) {
+                    output[key] = match[1];
+                }
             }
         }
     }
 
-    if (list.length == 0) {
-        throw "No hierarchy found";
+    let parseData = { };
+
+    let line;
+    while ((line = liner.next()) != null) {
+        PARSING_DATA.forEach(p => {
+            if (p.header == line) {
+                let r = parseSectionList(p);
+                if (!parseData[p.key] || parseData[p.key].length < r.length) {
+                    parseData[p.key] = r;
+                }
+            }
+        })
+    }
+
+    if (parseData.windows) {
+        list.forEach(entry => {
+            parseData.windows.forEach(window => {
+                if (`${window.hashCode} ${window.name}` == entry.name) {
+                    entry.pid = window.ownerUid;
+                    entry.name = window.name;
+                    if (window.display) {
+                        let parts = window.display.split(",");
+                        entry.display = {
+                            width: parseInt(parts[0]),
+                            height: parseInt(parts[1])
+                        }
+                    }
+                    if (window.dpi) {
+                        if (!entry.display) {
+                            entry.display = { };
+                        }
+                        entry.display.density = parseInt(window.dpi)
+                    }
+                }
+            })
+
+            if (parseData.packages) {
+                parseData.packages.forEach(pkg => {
+                    if (pkg.userId && pkg.userId == entry.pid) {
+                        entry.pname = pkg.name;
+                    }
+                })
+            }
+
+            if (entry.pname && !entry.pname.startsWith("com.android")) {
+                entry.icon = {
+                    value: `http://cdn.apk-cloud.com/detail/image/${entry.pname}-w250.png`
+                }
+                list.hasIcons = true;
+            }
+        });
     }
 
     list.use_new_api = false;
     postMessage({type: TYPE_BUG_REPORT, list: list});
+}
+
+function newLiner(data /* array buffer */) {
+    let decoder = new TextDecoder();
+    let remaining = data.byteLength;
+    let chuckSize = 1 << 22;
+
+    let byteStart = 0;
+
+    let lines = [""];
+    let linesIndex = 0;
+    let nextLine;
+
+    function parseNextChunk() {
+        var length = Math.min(remaining, chuckSize);
+        let dataView = new DataView(data, byteStart, length);
+        remaining -= length;
+        byteStart += chuckSize;
+        return decoder.decode(dataView).split("\n");
+    }
+
+    function consumeNextLine() {
+        var result = nextLine;
+
+        // Initialize the next line
+        while (linesIndex >= lines.length - 1 && remaining > 0) {
+            let lastRow = lines[lines.length - 1];
+            lines = parseNextChunk();
+            // Merge the very last line with the first line of next chuck
+            lines[0] = lastRow + lines[0];
+            linesIndex = 0;
+        }
+
+        if (linesIndex >= lines.length) {
+            nextLine = null;
+        } else {
+            nextLine = lines[linesIndex];
+            linesIndex++;
+        }
+        return result;
+    }
+
+    // Initialize first chuck
+    consumeNextLine();
+
+    return {
+        peek: function() {
+            return nextLine;
+        },
+        next: consumeNextLine
+    }
 }
