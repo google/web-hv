@@ -77,50 +77,66 @@ $.fn.showError = function(msg) {
 }
 
 function showContext(menu, callback, e) {
-  if (e.preventDefault) {
-      e.preventDefault();
-  }
-  var menuClickHandler = function() {
-      if (!$(this).hasClass(CLS_DISABLED)) {
-          if (!callback.call($(this).data("info"), $(this))) {
+    var elementFactory = function(el, hideMenu) {
+        var menuClickHandler = function() {
+            if (!$(this).hasClass(CLS_DISABLED)) {
+                if (!callback.call($(this).data("info"), $(this))) {
+                  hideMenu();
+                };
+            }
+        };
+
+        var addSeparator = false;
+        for (var i = 0; i < menu.length; i++) {
+            var m = menu[i];
+            if (!m) {
+                addSeparator = true;
+                continue;
+            }
+            var item = $("<a class=icon_btn>").text(m.text).addClass(m.icon).appendTo(el).data("info", m).click(menuClickHandler);
+            if (addSeparator) {
+                item.addClass("separator");
+            }
+            if (m.disabled) {
+                item.addClass(CLS_DISABLED);
+            }
+            addSeparator = false;
+        }
+    }
+
+    showPopup(e, elementFactory);
+}
+
+/**
+ * @param {*} e the click event
+ * @param {*} elementFactory a function which tasks 2 arguments: <container element>, <hide-menu-method>
+ */
+function showPopup(e, elementFactory) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    var wrapper = $("<div class='context-wrapper'>").appendTo(document.body);
+    var el = $("<div class='contextmenu'>").appendTo(wrapper);
+
+    var documentMouseDown = function(e) {
+        if (!el.has(e.toElement).length) {
             hideMenu();
-          };
-      }
-  };
+        }
+    };
 
-  var wrapper = $("<div class='context-wrapper'>").appendTo(document.body);
-  var el = $("<div class='contextmenu'>").appendTo(wrapper);
-  var addSeparator = false;
-  for (var i = 0; i < menu.length; i++) {
-      var m = menu[i];
-      if (!m) {
-          addSeparator = true;
-          continue;
-      }
-      var item = $("<a class=icon_btn>").text(m.text).addClass(m.icon).appendTo(el).data("info", m).click(menuClickHandler);
-      if (addSeparator) {
-          item.addClass("separator");
-      }
-      if (m.disabled) {
-          item.addClass(CLS_DISABLED);
-      }
-      addSeparator = false;
-  }
+    $(document).mousedown(documentMouseDown);
+    var hideMenu = function() {
+        wrapper.remove();
+        $(document).unbind("mousedown", documentMouseDown);
+        wrapper.trigger("popup_closed");
+    }
 
-  el.show().css({
-      left: Math.min(e.pageX, $(document).width() - el.width() - 10),
-      top: Math.min(e.pageY, $(document).height() - el.height() - 10)});
+    elementFactory(el, hideMenu);
+    el.show().css({
+        left: Math.min(e.pageX, $(document).width() - el.width() - 10),
+        top: Math.min(e.pageY, $(document).height() - el.height() - 10)});
 
-  var documentMouseDown = function(e) {
-      if (!el.has(e.toElement).length) {
-          hideMenu();
-      }
-  };
-  $(document).mousedown(documentMouseDown);
-  var hideMenu = function() {
-      wrapper.remove();
-      $(document).unbind("mousedown", documentMouseDown);
-  }
+    return wrapper;
 }
 
 function toast(msg) {

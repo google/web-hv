@@ -15,6 +15,8 @@
 const DISABLE_JDWP = false;
 
 function DDMClient(device, callbacks) {
+    device.closeAll();
+
     this.callbacks = callbacks;
     this.device = device;
     this.processCache = {};

@@ -147,33 +147,21 @@ label.expandable.closed.with_arrow span:before {
     transform: rotate(-90deg);
 }
 
-/** Search bar **/
-.search-bar {
-    outline: none;
-    border: none;
-    background: transparent;
-    line-height: inherit;
+/** Search box **/
+input[type=search]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    --icon-size: 16px;
+    height: var(--icon-size);
+    width: var(--icon-size);
+    display: block;
+    background-image: var(--clear-icon);
+    background-repeat: no-repeat;
+    background-size: var(--icon-size);
 }
-
-.search-clear:before {
-    font-family: "Icon-Font";
-    content: "\e5c9";
-    display: inline-block;
-    text-align: center;
-    font-size: 120%;
-    opacity: 0.6;
-    width: 100%;
-    transition: opacity 100ms;
-}
-.search-clear:hover:before {
+input[type=search]::-webkit-search-cancel-button:hover {
     opacity: 0.8;
 }
-.search-clear:active:before {
-    opacity: 1;
-}
-.search-bar:placeholder-shown + .search-clear {
-    visibility: hidden;
-}
+
 
 /** Context menu **/
 .context-wrapper {
@@ -193,7 +181,7 @@ label.expandable.closed.with_arrow span:before {
     left: 30px;
     top: 30px;
 }
-.contextmenu a {
+.contextmenu a, .contextmenu input {
     display: block;
     padding: 6px 15px;
     line-height: 27px;
@@ -225,7 +213,7 @@ label.expandable.closed.with_arrow span:before {
 
 /** Simple button **/
 button {
-    background: var(--button-bg-color);
+    background-color: var(--button-bg-color);
     border: none;
     border-radius: 4px;
     line-height: 30px;
@@ -237,6 +225,8 @@ button {
     outline: none;
     color: var(--text-color);
 }
+
+
 button.icon_btn {
     padding-left: 0px;
 }
@@ -256,4 +246,14 @@ button:hover {
 button:active {
     box-shadow: inset 0 0 100px 100px var(--hover-bg-color), 0 0 1px 2px rgba(0, 0, 0, 0.4);
     transform: scale(0.98);
+}
+
+.contextmenu input[type=search] {
+    padding: 2px 15px;
+    -webkit-appearance: none;
+    border-radius: 0px;
+    border: 0;
+    max-width: 500px;
+    width: calc(100vw - 40px);
+    cursor: default;
 }
