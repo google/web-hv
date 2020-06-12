@@ -59,6 +59,7 @@ function AdbDevice(device, interface) {
     this.readyDeferred = [];
     this.closeDeferred = [];
     this.version = VERSION;
+    this._sendMutex = new Mutex();
 
     var eps = interface.alternates[0].endpoints;
     for (var i = 0; i < eps.length; i++) {
@@ -108,30 +109,32 @@ AdbDevice.prototype._sendMessage = async function (command, arg0, arg1, data) {
     if (!!this.readyDeferred.length) {
         await Promise.resolve(this.readyDeferred[this.readyDeferred.length - 1]);
     }
-    if (PROTOCOL_DEBUG) console.debug("Sending ", commandMap[command], arg0, arg1);
-    if (!data) {
-        await this._sendSinglePacketMessage(command, arg0, arg1);
-    } else {
-        let sentByteCount = 0;
-        // If `data` is large, send the message as small chunks of at most
-        // `this.maxPayload` bytes each. Wait for an `OKAY` from the device before
-        // sending the next chunk, and re-send a header with every chunk.
-        while (sentByteCount !== data.byteLength) {
-            const length = Math.min(this.maxPayload, data.byteLength - sentByteCount);
-            const chunk = data.subarray(sentByteCount, sentByteCount + length);
-            sentByteCount += length;
-            if (sentByteCount !== data.byteLength) {
-                await this._sendSinglePacketMessage(command, arg0, arg1, chunk);
-            } else {
+    // Send packets serially, otherwise headers might get mixed up
+    let sendLock = await this._sendMutex.lock();
+    try {
+        if (PROTOCOL_DEBUG) console.debug("Sending ", commandMap[command], arg0, arg1);
+        if (!data) {
+            await this._sendSinglePacketMessage(command, arg0, arg1);
+        } else {
+            let sentByteCount = 0;
+            // If `data` is large, send the message as small chunks of at most
+            // `this.maxPayload` bytes each. Wait for an `OKAY` from the device before
+            // sending the next chunk, and re-send a header with every chunk.
+            while (sentByteCount !== data.byteLength) {
+                const length = Math.min(this.maxPayload, data.byteLength - sentByteCount);
+                const chunk = data.subarray(sentByteCount, sentByteCount + length);
+                sentByteCount += length;
                 await this._sendSinglePacketMessage(command, arg0, arg1, chunk);
             }
         }
+    } finally {
+        sendLock();
     }
 }
 
-
 AdbDevice.prototype._readData = async function (length) {
     var result = await this.device.transferIn(this.inEndPoint, length);
+
     if (result.status === 'ok') {
         const view = result.data;
         return new Uint8Array(view.buffer, view.byteOffset, view.byteLength);

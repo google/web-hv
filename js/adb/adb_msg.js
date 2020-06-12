@@ -38,8 +38,8 @@ commandMap[AUTH_COMMAND] = "AUTH_COMMAND";
 /**
  * ADB protocol version.
  */
-const VERSION = 0x01000000;
 const VERSION_SKIP_CHECKSUM = 0x01000001;
+const VERSION = VERSION_SKIP_CHECKSUM;
 
 /**
  * Compute the expected header magic value

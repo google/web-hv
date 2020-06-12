@@ -23,6 +23,18 @@ function deferred() {
     return p;
 }
 
+class Mutex {
+    constructor() {
+        this._lock = Promise.resolve();
+    }
+
+    lock() {
+        let nextLock = deferred();
+        let returnAfterCurrentLock = this._lock.then(() => nextLock.accept);
+        this._lock = this._lock.then(() => nextLock);
+        return returnAfterCurrentLock;
+    }
+}
 
 var ActiveState = [];
 
