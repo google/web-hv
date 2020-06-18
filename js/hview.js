@@ -162,16 +162,6 @@ $(function () {
         });
     })();
 
-    // Initialize search clear buttons
-    $(".search-bar + .search-clear").click(function () {
-        var input = $(this).prev();
-        if (input.val() == "") {
-            input.trigger("close");
-        } else {
-            input.val("").trigger("input");
-        }
-    });
-
     /********************************* Filter properties *********************************/
     var filterProperties = function () {
         var q = $("#pfilter").val().trim().toLocaleLowerCase();
@@ -585,7 +575,7 @@ $(function () {
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
         $("#main-progress").show();
-        $("#device-list-content").remove();
+        $("#device-list-content").empty().hide();
         $("#darkThemeSwitch").remove();
         $("#hview").removeClass("hide");
 
@@ -605,13 +595,24 @@ $(function () {
             loadSuggestions(viewController.device);
         } else {
             $("#btn-custom-command").hide();
-            $("#custom-command-input").trigger("close");
         }
 
         let title = appInfo.name.split(".");
         title = title[title.length - 1];
-        document.title = title + " [" + appInfo.name + "]";
+        $("#windowTitle").text(document.title = title + " [" + appInfo.name + "]")
         currentAppInfo = appInfo;
+
+        if (appInfo.goBack) {
+            $("#btn-go-back").unbind("click").show().click(function() {
+                $("#btn-go-back").unbind("click");
+                $("#hview").addClass("hide").addClass("hidden");
+                $("#device-list-content").empty().show();
+                appInfo.goBack();
+            })
+        } else {
+            $("#btn-go-back").unbind("click").hide();
+        }
+
     }
 
     /********************************* Preview Grid resize *********************************/
@@ -868,72 +869,113 @@ $(function () {
 
 
     /** ********************** Node search ********************** */
-    var nodeSearch = function (dir) {
-        var query = $("#view-search").val().toLocaleLowerCase();
-        if (query == "") return;
+    var lastNodeSearchText = "";
+    $("#btn-search-node").click(function(e) {
+        var searchInput;
+        var elementFactory = function(el, hideMenu) {
+            searchInput = $("<input type=search placeholder='Search node'>").appendTo(el);
 
-        // Search through boxes, as nodes might be collapsed.
-        var boxes = $("#border-box div");
-        var nodes = boxes.filter(function() {
-            return $(this).css("display") != "none";
-        }).map(function () {
-            return $(this).data("node").el.get(0);
-        });
-
-        var st = nodes.index(selectedNode.el);
-        var count = nodes.length;
-
-        for (var i = -1; i < count; i++) {
-            st += dir;
-            if (st < 0) {
-                st = count - 1;
-            }
-            if (st >= count) {
-                st = 0;
-            }
-            if ($(nodes.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
-                // Found element.
-                selectNode.call(nodes.get(st));
-                scrollToNode(selectedNode);
-                return;
-            }
+            // Use key up for enter, so that the user has time to press shift key
+            searchInput.keyup(function (e) {
+                if (e.keyCode == 13) {
+                    nodeSearch(e.shiftKey ? -1 : 1);
+                }
+            });
+            searchInput.keydown(function (e) {
+                if (e.keyCode == 27) {
+                    e.preventDefault();
+                    hideMenu();
+                }
+            });
         }
-    }
-    $("#view-search").keyup(function (e) {
-        if (e.keyCode == 13) {
-            nodeSearch(e.shiftKey ? -1 : 1);
+        showPopup(e, elementFactory);
+        searchInput.val(lastNodeSearchText).focus().select();
+
+        var nodeSearch = function (dir) {
+            var query = searchInput.val();
+            if (query == "") return;
+            lastNodeSearchText = query;
+            query = query.toLocaleLowerCase();
+
+            // Search through boxes, as nodes might be collapsed.
+            var boxes = $("#border-box div");
+            var nodes = boxes.filter(function() {
+                return $(this).css("display") != "none";
+            }).map(function () {
+                return $(this).data("node").el.get(0);
+            });
+
+            var st = nodes.index(selectedNode.el);
+            var count = nodes.length;
+
+            for (var i = -1; i < count; i++) {
+                st += dir;
+                if (st < 0) {
+                    st = count - 1;
+                }
+                if (st >= count) {
+                    st = 0;
+                }
+                if ($(nodes.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
+                    // Found element.
+                    selectNode.call(nodes.get(st));
+                    scrollToNode(selectedNode);
+                    return;
+                }
+            }
         }
     });
 
     /** ********************** Custom command ********************** */
     var ignoreNextKeyUp = false;
 
-    $("#btn-custom-command").click(function () {
-        $("#hview").removeClass("custom-command-closed-mode").addClass("custom-command-mode");
-        $("#custom-command-input").focus();
-    })
-    $("#custom-command-input").on("close", function () {
-        $("#hview").removeClass("custom-command-mode").addClass("custom-command-closed-mode");
-    }).keyup(function (e) {
-        if (ignoreNextKeyUp) {
-            ignoreNextKeyUp = false;
-            return;
+    $("#btn-custom-command").click(function (e) {
+        var commandInput;
+        var errorContainer;
+        var elementFactory = function(el) {
+            commandInput = $("<input type=search placeholder='Custom command'>").appendTo(el);
+            errorContainer = $("<div class='custom-command-error-wrapper'>").appendTo(el);
         }
-        if (e.keyCode == 13) {
-            executeCommand($(this).val());
-        }
-    }).on("input", function () {
-        $("#hview-error-box").empty();
-    }).blur(function () {
-        $("#hview-error-box").empty();
-    });
+        var popup = showPopup(e, elementFactory);
 
-    var executeCommand = function (cmd) {
+
+        if (viewMethodList != null) {
+            // Setup auto complete
+            var methodAutoComplete = new autoComplete({
+                selector: commandInput.get(0),
+                minChars: 1,
+                source: autoCompleteSource,
+                renderItem: suggestionRenderer,
+                onSelect: function () { ignoreNextKeyUp = true; }
+            });
+            popup.on("popup_closed", function(e) {
+                console.log("Popup closed", e);
+                methodAutoComplete.destroy();
+            });
+        }
+
+        commandInput.focus().select();
+        commandInput.keyup(function (e) {
+            if (ignoreNextKeyUp) {
+                ignoreNextKeyUp = false;
+                return;
+            }
+            if (e.keyCode == 13) {
+                executeCommand($(this).val(), errorContainer);
+            }
+        }).on("input", function () {
+            errorContainer.empty();
+        }).blur(function () {
+            errorContainer.empty();
+        });
+    })
+
+    var executeCommand = function (cmd, errorContainer) {
         cmd = cmd.trim();
         var m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^\)]*)\)\;?$/);
 
         if (!m) {
-            $("#hview-error-box").showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
+            errorContainer.showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
             return;
         }
 
@@ -964,11 +1006,11 @@ $(function () {
                         throw "error"
                     }
                 } catch (e) {
-                    $("#hview-error-box").showError("Invalid paramater: [" + params[i].trim() + "]. eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
+                    errorContainer.showError("Invalid paramater: [" + params[i].trim() + "]. eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
                 }
             }
         }
-        viewController.customCommand(selectedNode.name, data.data).catch($("#hview-error-box").showError.bind($("#hview-error-box")));
+        viewController.customCommand(selectedNode.name, data.data).catch(errorContainer.showError.bind(errorContainer));
     }
 
     var viewMethodList = null;
@@ -993,17 +1035,6 @@ $(function () {
         await device.sendFile("/data/local/tmp/methods.jar", "commands/methods.jar");
         var response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
         response = JSON.parse(response.split("\n", 2)[1]);
-
-        if (viewMethodList == null) {
-            // Setup auto complete
-            new autoComplete({
-                selector: '#custom-command-input',
-                minChars: 1,
-                source: autoCompleteSource,
-                renderItem: suggestionRenderer,
-                onSelect: function () { ignoreNextKeyUp = true; }
-            });
-        }
         viewMethodList = response;
     };
 

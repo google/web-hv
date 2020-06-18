@@ -16,6 +16,7 @@
 
 #hview {
     overflow: hidden;
+    --corner: 5px;
 }
 
 .divider {
@@ -139,12 +140,6 @@
     position: relative
 }
 
-#hview .search-clear {
-    position: absolute;
-    right: 0;
-    width: 30px;
-}
-
 .preview-disabled {
     color: #B71C1C;
 }
@@ -158,7 +153,7 @@
 #pList .right-title {
     line-height: 30px;
     background: var(--title-color);
-    border-radius: 5px 5px 0 0;
+    border-radius: var(--corner) var(--corner) 0 0;
     color: #FFF;
 }
 
@@ -166,11 +161,18 @@
     padding: 0 30px;
     flex: 1;
     color: #FFF;
+    outline: none;
+    border: none;
+    background: transparent;
+    line-height: inherit;
+    -webkit-appearance: none;
 }
-
 #pfilter::-webkit-input-placeholder {
     color: #FFF;
     font-weight: 500;
+}
+#pfilter::-webkit-search-cancel-button {
+    filter: brightness(100);
 }
 
 /********** View search ********************/
@@ -204,87 +206,80 @@
 }
 
 /********** Custom methods ********************/
-#custom-command-wrapper {
+.custom-command-error-wrapper {
+    width: calc(100vw - 40px);
+    max-width: 500px;
+
+}
+.custom-command-error-wrapper .error {
+    border: none;
+    background: var(--error-color);
+    border-radius: 0 0 4px 4px;
+    color: #fff;
+}
+
+#btn-go-back {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+    background-image: var(--back-icon);
+    background-repeat: no-repeat;
+    background-size: 20px;
+    background-position: center;
+    filter: brightness(100);
+    cursor: pointer;
+}
+#btn-go-back:hover {
+    opacity: 0.7;
+}
+
+#hvTitle {
+    background: var(--title-color);
+    color: #FFF;
     position: absolute;
+    display:flex;
+    flex-wrap: nowrap;
+    height: 30px;
+    left: 0;
     right: 0;
-    display: flex;
+    top: 0;
+    padding: 5px;
+    border-radius: var(--corner) var(--corner) 0 0;
+}
+
+#windowTitle {
+    overflow: hidden;
+    display: inline-block;
     line-height: 30px;
     height: 30px;
-    visibility: hidden;
-}
-#custom-command-wrapper::before {
-    position: absolute;
-    left: 10px;
-    color: var(--subtext-color);
-}
-
-#custom-command-input {
-    padding: 0 33px;
-    overflow: hidden;
-    box-shadow: 0 0 1px 2px rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding-right: 2px;
     flex: 1;
-    background: var(--card-bg-color);
-    color: var(--text-color);
-}
-#custom-command-input:focus {
-    box-shadow: 0 0 0px 2px var(--selected-color);
 }
 
-#custom-command-input::-webkit-input-placeholder {
-    color: var(--subtext-color);
-    font-weight: bold;
+#hvTitle button {
+    border: none;
+    background: var(--title-color);
+    margin-right: 5px;
+    color:#FFF;
+    width: 35px;
+    box-shadow: inset 0 0 100px 100px rgba(0, 0, 0, 0.1);
 }
 
-#custom-command-wrapper .search-clear {
-    visibility: inherit !important;
+#hvTitle button:focus {
+    box-shadow: inset 0 0 100px 100px rgba(0, 0, 0, 0.3);
 }
 
-/* switch mode with animation */
-.custom-command-mode #view-search-container, .custom-command-mode #btn-custom-command {
-    display: none !important;
-}
-
-.custom-command-mode #custom-command-wrapper {
-    visibility: visible;
-    -webkit-animation:custom-command-expand 150ms;
-    -webkit-animation-fill-mode: forwards;
-}
-
-@-webkit-keyframes custom-command-expand {
-    0% {
-        width: 155px;
-    }
-    100% {
-        width: 100%;
-    }
-}
-
-.custom-command-closed-mode #custom-command-wrapper {
-    -webkit-animation:custom-command-collapsed 150ms;
-    -webkit-animation-fill-mode: forwards;
-}
-
-@-webkit-keyframes custom-command-collapsed {
-    0% {
-        visibility: visible;
-        width: 100%;
-    }
-    100% {
-        width: 155px;
-        visibility: hidden;
-    }
-}
-
-#hview-error-box .error {
-    background: #FFF;
-    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+#hvTitle button:hover, #hvTitle button:active {
+    box-shadow: inset 0 0 100px 100px rgba(0, 0, 0, 0.2);
 }
 
 .frame {
     background: var(--card-bg-color);
     box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    border-radius: var(--corner);
     box-sizing: border-box;
     flex-direction: column;
     display: flex;
@@ -373,6 +368,10 @@ x-profile a.red {
 }
 
 @media screen and (max-width: 550px) {
+    #hview {
+        --corner: 0px;
+    }
+
     .divider {
         display:none;
     }
@@ -401,17 +400,12 @@ x-profile a.red {
         display: block;
     }
 
-    #pList .right-title {
-        border-radius: 0px;
-    }
-
     .frame {
         top: 40px !important;
         bottom: 0px !important;
         height: auto !important;
         right: 0px !important;
         box-shadow: none;
-        border-radius: 0px;
     }
 
     #hviewtabs {

@@ -28,10 +28,14 @@ var activityListAction = function (initializer) {
         if (newApiChk != null && newApiChk.is(':checked')) {
             info.use_new_api = false;
         }
+        info.goBack = function() {
+            activityListAction(initializer);
+        };
+
         hViewAction(info);
     }
 
-    var renderActivities = function (container, list) {
+    var renderActivities = function(container, list) {
         if (list.use_new_api) {
             newApiChk = $('<input type="checkbox" />');
             $("<label class='old-api'>").appendTo(container).append(newApiChk).append($("<span class='slider'>")).append($("<span class='text'>").text("Load custom properties"));
@@ -40,6 +44,9 @@ var activityListAction = function (initializer) {
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
+        if (list.hasIcons) {
+            container.addClass("has-icons")
+        }
         for (var i = 0; i < list.length; i++) {
             var l = list[i];
             var entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");

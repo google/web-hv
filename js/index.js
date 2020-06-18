@@ -133,6 +133,7 @@ async function openAndClaim(device) {
 		device.releaseInterface(interface.interfaceNumber);
 		device.close();
 	});
+	console.log("Device connected, starting handshake");
 	adbDevice = new AdbDevice(device, interface);
 	adbDevice.stateCallback = onDeviceStateChange;
 	await adbDevice.connect();
@@ -147,7 +148,6 @@ function onDeviceStateChange(newState) {
 		adbDevice.closeAll();
 	});
 
-	console.info("Device connected");
 	document.title = adbDevice.device.manufacturerName + " " + adbDevice.device.productName;
 	activityListAction(function(callbacks) {
 		var client = new DDMClient(adbDevice, callbacks);
