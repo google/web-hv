@@ -112,3 +112,13 @@ body {
     right: 10px;
     opacity: 0;
 }
+
+#hierarchy-picker i {
+    font-size: 18px;
+}
+#hierarchy-picker.drag_over {
+    box-shadow: 0 0 0 5px var(--button-bg-color);
+    border: 5px dashed;
+    box-sizing: border-box;
+    line-height: 40px;
+}

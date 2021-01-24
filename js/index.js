@@ -21,11 +21,7 @@ $(function () {
 		handleSelectDevice(navigator.usb.requestDevice({ filters: [ADB_DEVICE_FILTER] }));
 	});
 
-	$("#hierarchy-picker").click(function () {
-		$("#hierarchy-picker-input").click();
-	});
-
-	$("#hierarchy-picker-input").on("change", function () {
+	var loadFile = function() {
 		if (!this.files || this.files.length < 1) {
 			return;
 		}
@@ -52,7 +48,17 @@ $(function () {
 			}
 		}
 		w.postMessage(this.files[0]);
-	});
+	}
+	$("#hierarchy-picker-input").on("change", loadFile);
+	var pickerButton = $("#hierarchy-picker")
+		.click(() => $("#hierarchy-picker-input").click())
+		.on('dragover dragenter', () => pickerButton.addClass('drag_over'))
+		.on('dragleave dragend drop', () => pickerButton.removeClass('drag_over'))
+		.on('drop', e => loadFile.call(e.originalEvent.dataTransfer))
+		.on('drag dragstart dragend dragover dragenter dragleave drop', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+		});
 
 	// Load any verified devices
 	refreshConnectedDevices();
