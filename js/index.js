@@ -112,7 +112,7 @@ var adbDevice;
 async function openAndClaim(device) {
 	console.debug("Opening device", device);
 	await device.open();
-	await device.reset();
+	// await device.reset();
 
 	await device.selectConfiguration(1);
 
