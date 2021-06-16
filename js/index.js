@@ -112,8 +112,6 @@ var adbDevice;
 async function openAndClaim(device) {
 	console.debug("Opening device", device);
 	await device.open();
-	// await device.reset();
-
 	await device.selectConfiguration(1);
 
 	// Find interface
@@ -134,7 +132,26 @@ async function openAndClaim(device) {
 		throw "No interface found";
 	}
 
-	await device.claimInterface(interface.interfaceNumber);
+	try {
+	  await device.claimInterface(interface.interfaceNumber);
+	} catch(e) {
+		console.log("Device is use, trying reset");
+		await device.reset();
+		try {
+			await device.claimInterface(interface.interfaceNumber);
+		} catch (e) {
+			console.log("Reset pending, waiting some time");
+			await new Promise(r => setTimeout(r, 500));
+
+			try {
+				await device.claimInterface(interface.interfaceNumber);
+			} catch (e) {
+				await new Promise(r => setTimeout(r, 500));
+				await device.claimInterface(interface.interfaceNumber);
+			}
+		}
+	}
+
 	$(window).on('beforeunload', function () {
 		device.releaseInterface(interface.interfaceNumber);
 		device.close();
@@ -143,6 +160,17 @@ async function openAndClaim(device) {
 	adbDevice = new AdbDevice(device, interface);
 	adbDevice.stateCallback = onDeviceStateChange;
 	await adbDevice.connect();
+}
+
+async function tryClaimWithBackoff(device, interfaceNumber) {
+	for (var i = 0; i < 3; i ++) {
+		try {
+			await device.claimInterface(interface.interfaceNumber);
+			return;
+		} catch (e) {
+			await new Promise(r => setTimeout(r, 500));
+		}
+	}
 }
 
 function onDeviceStateChange(newState) {

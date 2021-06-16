@@ -566,6 +566,10 @@ $(function () {
         var boxContent = $("#border-box").empty();
         currentRootNode = root;
 
+        // Clear all transform from the root, so that it matches the preview
+        root.scaleX = root.scaleY = 1;
+        root.translateX = root.translateY = 1;
+
         renderNode(root, $("#vlist_content").empty(), boxContent, root.width, root.height, 0, 0, 1, 1);
         resizeBoxView();
         $("#vlist_content label").first().click();
