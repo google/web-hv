@@ -162,6 +162,16 @@ AdbDevice.prototype._doReadLoop = async function () {
     }
 }
 
+AdbDevice.prototype._resolveDeferred = function(localId, remoteId) {
+    for (var i = 0; i < this.readyDeferred.length; i++) {
+        if (this.readyDeferred[i].data == localId) {
+            this.readyDeferred.splice(i, 1)[0].accept(remoteId);
+            return true;
+        }
+    }
+    return false;
+}
+
 AdbDevice.prototype._handleMessage = function (header, data) {
     if (PROTOCOL_DEBUG) console.debug("Received", header, commandMap[header.command], this.readyDeferred.length);
     switch (header.command) {
@@ -186,38 +196,36 @@ AdbDevice.prototype._handleMessage = function (header, data) {
             const localId = header.arg0;
             const remoteId = header.arg1;
             if (!!this.readyDeferred.length) {
-                this.readyDeferred.shift().accept(localId);
+                this._resolveDeferred(remoteId, localId);
             } else if (!this._findStream(remoteId, localId)) {
                 this._sendMessage(CLSE_COMMAND, remoteId, localId);
             }
             break;
         }
-        case CLSE_COMMAND:
-            {
+        case CLSE_COMMAND: {
+            // Resolve all pending OKAYs
+            while(this._resolveDeferred(header.arg1, header.arg0));
 
-                // if (!!this.readyDeferred.length) {
-                //     this.readyDeferred.shift().reject(new Error('Stream closed unexpectedly. ' + header.arg1));
-                // }
-
-                const localId = header.arg0;
-                const remoteId = header.arg1;
-                const stream = this._findStream(remoteId, localId);
-                if (stream) {
-                    stream.onReceiveClose();
-                }
-                break;
+            const localId = header.arg0;
+            const remoteId = header.arg1;
+            const stream = this._findStream(remoteId, localId);
+            if (stream) {
+                stream.onReceiveClose();
             }
-        case WRTE_COMMAND:
-            {
+            break;
+        }
+        case WRTE_COMMAND: {
 
-                const localId = header.arg0;
-                const remoteId = header.arg1;
-                const stream = this._findStream(remoteId, localId);
-                if (stream) {
-                    stream.onReceiveWrite(data)
-                }
-                break;
+            const localId = header.arg0;
+            const remoteId = header.arg1;
+            const stream = this._findStream(remoteId, localId);
+            if (stream) {
+                stream.onReceiveWrite(data)
+            } else {
+                console.log("Not found" , localId, remoteId);
             }
+            break;
+        }
         case AUTH_COMMAND:
             const authType = header.arg0;
             switch (authType) {
@@ -242,6 +250,9 @@ AdbDevice.prototype._handleMessage = function (header, data) {
 AdbDevice.prototype._findStream = function (localId, remoteId) {
     const stream = this.streams[localId];
     if (stream && (stream.remoteId === 0 || remoteId === stream.remoteId || remoteId === 0)) {
+        if (remoteId != 0) {
+            stream.remoteId = remoteId;
+        }
         return stream;
     } else {
         return undefined;
@@ -286,7 +297,7 @@ function AdbStream(device, localId) {
     this.localId = localId;
     this.remoteId = 0;
     this.pending = [];
-    this.remoteIdResolved = deferred();
+    this.remoteIdResolved = deferred(this.localId);
     this.keepOpen = false;
     this.state = STREAM_OPEN;
 }
@@ -300,7 +311,7 @@ AdbStream.prototype.write = async function (data) {
         data = stringToByteArray(data);
     }
     this.device._sendMessage(WRTE_COMMAND, this.localId, this.remoteId, data);
-    var ok = deferred();
+    var ok = deferred(this.localId);
     this.device.readyDeferred.push(ok);
     return ok;
 }
@@ -428,6 +439,7 @@ AdbDevice.prototype.shellCommand = function (command) {
 }
 
 AdbDevice.prototype.closeAll = function () {
+    console.log("Closing all");
     for (var i = 0; i < this.streams.length; i++) {
         if (this.streams[i]) {
             this.streams[i].onClose = null;

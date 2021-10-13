@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-function deferred() {
+function deferred(data) {
 	var a, r;
 	var p = new Promise(function(accept, reject) {
 		a = accept;
@@ -20,6 +20,7 @@ function deferred() {
     });
     p.accept = a;
     p.reject = r;
+    p.data = data;
     return p;
 }
 

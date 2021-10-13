@@ -33,6 +33,7 @@
     <script src="third_party/crypto.min.js"></script>
     <script src="third_party/auto-complete.min.js"></script>
     <script src="third_party/jszip.min.js"></script>
+    <script src="third_party/jmuxer.min.js"></script>
 
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
@@ -46,6 +47,7 @@
 
     <script src="js/activity_list.js"></script>
     <script src="js/hview.js"></script>
+    <script src="js/dmirror.js"></script>
 
     <script src="js/index.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
@@ -132,6 +134,13 @@
                 <div class="selected" target="#vlist">View tree</div>
                 <div target="#pList, #rcontent">Properties</div>
                 <div target="#sshot, #rcontent" id="sshot-tab">Preview</div>
+            </div>
+        </div>
+
+        <!-- Device mirror view -->
+        <div id="dmirrorview" class="content-panel hide hidden">
+            <div class="frame" style="padding: 10px; left: 50%; top: 50%; position: absolute; display: inline-block; transform: translate(-50%, -50%); overflow: hidden;">
+                <div id="video-message">If the video does not apper, try redrawing the screen by interacting with the device</div>
             </div>
         </div>
 </body>

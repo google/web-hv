@@ -36,11 +36,17 @@ var activityListAction = function (initializer) {
     }
 
     var renderActivities = function(container, list) {
+
+        var buttonbar = $("<div class='button-bar'>").css({display: "flex"}).appendTo(container);
         if (list.use_new_api) {
             newApiChk = $('<input type="checkbox" />');
-            $("<label class='old-api'>").appendTo(container).append(newApiChk).append($("<span class='slider'>")).append($("<span class='text'>").text("Load custom properties"));
+            $("<label class='old-api'>").appendTo(buttonbar).append(newApiChk).append($("<span class='slider'>")).append($("<span class='text'>").text("Load custom properties"));
         } else {
             newApiChk = null;
+        }
+        if (adbDevice) {
+            $("<div>").css({flexGrow: 1}).appendTo(buttonbar);
+            $("<button>").text("Mirror Display").appendTo(buttonbar).click(deviceMirrorAction);
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
