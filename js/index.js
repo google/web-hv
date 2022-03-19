@@ -72,6 +72,14 @@ $(function () {
 	if (isDarkTheme()) {
 		switchTheme();
 	}
+
+	// Check url hash
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.get("mode") == "mirror") {
+		// Switch to mirror mode
+		$("#main-title-wrapper").html("<h2>Mirror android screen</h2>");
+		activityListAction = deviceMirrorAction;
+	}
 })
 
 function refreshConnectedDevices() {
@@ -160,17 +168,6 @@ async function openAndClaim(device) {
 	adbDevice = new AdbDevice(device, interface);
 	adbDevice.stateCallback = onDeviceStateChange;
 	await adbDevice.connect();
-}
-
-async function tryClaimWithBackoff(device, interfaceNumber) {
-	for (var i = 0; i < 3; i ++) {
-		try {
-			await device.claimInterface(interface.interfaceNumber);
-			return;
-		} catch (e) {
-			await new Promise(r => setTimeout(r, 500));
-		}
-	}
 }
 
 function onDeviceStateChange(newState) {

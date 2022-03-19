@@ -63,8 +63,10 @@
         <a id="darkThemeSwitch" style="display: block; cursor: pointer; position: absolute; right: 15px; top: 15px;" onclick="switchTheme()">Lights off</a>
         <div id="device-list-content">
             <div id="start-screen">
-                <button id="hierarchy-picker">Pick a bug report <i>or drag it here</i></button>
-                <input id="hierarchy-picker-input" type="file" name="name" style="display: none;" accept=".zip" /> or
+                <span id="main-title-wrapper">
+                    <button id="hierarchy-picker">Pick a bug report <i>or drag it here</i></button>
+                    <input id="hierarchy-picker-input" type="file" name="name" style="display: none;" accept=".zip" /> or
+                </span>
                 <button id="device-picker">Select a device</button>
                 <i>Selecting a device will kill existing ADB connections</i>
             </div>
