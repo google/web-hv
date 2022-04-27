@@ -16,6 +16,7 @@ var CLS_EXPANDABLE = "expandable";
 var CLS_CLOSED = "closed";
 var CLS_TREENODE = "treenode";
 var CLS_SELECTED = "selected";
+var CLS_LAST_SELECTED = "last_selected";
 var CLS_HOVER = "hover";
 var CLS_FORCE_NO_BG = "force-no-bg";
 var CLS_HIDE_MY_BG = "hide-my-bg";
