@@ -283,10 +283,19 @@ $(function () {
 
     var selectNode = function () {
         if ($(this).hasClass(CLS_SELECTED)) return;
-        $("#vlist_content .selected").removeClass(CLS_SELECTED);
+        $("#vlist_content .last_selected")
+            .removeClass(CLS_LAST_SELECTED);
+        $("#vlist_content .selected")
+            .removeClass(CLS_SELECTED)
+            .addClass(CLS_LAST_SELECTED);
         $(this).addClass(CLS_SELECTED);
 
-        $("#border-box .selected, #image-preview").removeClass(CLS_SELECTED).css('background-image', 'none');
+        $("#border-box .last_selected, #image-preview")
+            .removeClass(CLS_LAST_SELECTED);
+        $("#border-box .selected, #image-preview")
+            .removeClass(CLS_SELECTED)
+            .css('background-image', 'none')
+            .addClass(CLS_LAST_SELECTED);
         var box = $(this).data("box").addClass(CLS_SELECTED);
 
         // Render properties;
