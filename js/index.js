@@ -21,11 +21,7 @@ $(function () {
 		handleSelectDevice(navigator.usb.requestDevice({ filters: [ADB_DEVICE_FILTER] }));
 	});
 
-	$("#hierarchy-picker").click(function () {
-		$("#hierarchy-picker-input").click();
-	});
-
-	$("#hierarchy-picker-input").on("change", function () {
+	var loadFile = function() {
 		if (!this.files || this.files.length < 1) {
 			return;
 		}
@@ -52,7 +48,17 @@ $(function () {
 			}
 		}
 		w.postMessage(this.files[0]);
-	});
+	}
+	$("#hierarchy-picker-input").on("change", loadFile);
+	var pickerButton = $("#hierarchy-picker")
+		.click(() => $("#hierarchy-picker-input").click())
+		.on('dragover dragenter', () => pickerButton.addClass('drag_over'))
+		.on('dragleave dragend drop', () => pickerButton.removeClass('drag_over'))
+		.on('drop', e => loadFile.call(e.originalEvent.dataTransfer))
+		.on('drag dragstart dragend dragover dragenter dragleave drop', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+		});
 
 	// Load any verified devices
 	refreshConnectedDevices();
@@ -65,6 +71,14 @@ $(function () {
 
 	if (isDarkTheme()) {
 		switchTheme();
+	}
+
+	// Check url hash
+	const urlParams = new URLSearchParams(window.location.search);
+	if (urlParams.get("mode") == "mirror") {
+		// Switch to mirror mode
+		$("#main-title-wrapper").html("<h2>Mirror android screen</h2>");
+		activityListAction = deviceMirrorAction;
 	}
 })
 
@@ -106,8 +120,6 @@ var adbDevice;
 async function openAndClaim(device) {
 	console.debug("Opening device", device);
 	await device.open();
-	await device.reset();
-
 	await device.selectConfiguration(1);
 
 	// Find interface
@@ -128,7 +140,26 @@ async function openAndClaim(device) {
 		throw "No interface found";
 	}
 
-	await device.claimInterface(interface.interfaceNumber);
+	try {
+	  await device.claimInterface(interface.interfaceNumber);
+	} catch(e) {
+		console.log("Device is use, trying reset");
+		await device.reset();
+		try {
+			await device.claimInterface(interface.interfaceNumber);
+		} catch (e) {
+			console.log("Reset pending, waiting some time");
+			await new Promise(r => setTimeout(r, 500));
+
+			try {
+				await device.claimInterface(interface.interfaceNumber);
+			} catch (e) {
+				await new Promise(r => setTimeout(r, 500));
+				await device.claimInterface(interface.interfaceNumber);
+			}
+		}
+	}
+
 	$(window).on('beforeunload', function () {
 		device.releaseInterface(interface.interfaceNumber);
 		device.close();

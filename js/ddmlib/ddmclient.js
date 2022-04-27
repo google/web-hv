@@ -253,8 +253,7 @@ DDMClient.prototype._getIconForPid = async function (pid) {
     return r;
 }
 
-function createViewController(appInfo) {
-    // Reset state
+function resetActiveState() {
     for (var i = 0; i < ActiveState.length; i++) {
         ActiveState[i]();
     }
@@ -264,6 +263,10 @@ function createViewController(appInfo) {
             adbDevice.closeAll();
         });
     }
+}
+
+function createViewController(appInfo) {
+    resetActiveState();
 
     if (appInfo.type == TYPE_ZIP) {
         return new OfflineServiceController(appInfo)
