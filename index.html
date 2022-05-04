@@ -77,18 +77,27 @@
 
         <!-- Hierarchy View -->
         <div id="hview" class="content-panel hide hidden">
-            <!-- Main panel -->
-            <div class="frame showAsTab" id="vlist" style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
-                <!-- Search and custom command -->
-                <div id="hvTitle">
-                    <a title="Back" id="btn-go-back"></a>
-                    <span id="windowTitle"></span>
-                    <button title="Search node"  class="ic_search icon_btn" id="btn-search-node"></button>
-                    <button title="Custom command"  class="ic_play icon_btn" id="btn-custom-command"></button>
-                    <button title="More options" class="ic_options icon_btn" id="btn-options"></button>
+            <!-- Left panel -->
+            <div style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
+                <div class="frame showAsTab" id="vlist" style="left:0px;right:0px;bottom:30px;top:0px;position:absolute;" limit="400">
+                    <!-- Search and custom command -->
+                    <div id="hvTitle">
+                        <a title="Back" id="btn-go-back"></a>
+                        <span id="windowTitle"></span>
+                        <button title="Search node"  class="ic_search icon_btn" id="btn-search-node"></button>
+                        <button title="Custom command"  class="ic_play icon_btn" id="btn-custom-command"></button>
+                        <button title="More options" class="ic_options icon_btn" id="btn-options"></button>
+                    </div>
+                    <div id="vlist_content" class="treeview"></div>
                 </div>
 
-                <div id="vlist_content" class="treeview"></div>
+                <div style="bottom:20px;height:10px;left:0;right:0;cursor:ns-resize" class="divider" control="pageY,bottom,height" id="left-panel-divider"></div>
+
+                <!-- TODO: This should be hidden when the data isn't time lapse -->
+                <!-- TODO: Hook up to mock data -->
+                <div class="frame" id="tl-range-container" style="position:absolute;left:0px;right:0px;height:20px;bottom:0px;overflow: hidden;" limit="20">
+                    <input class="tl-range" type="range" style="margin: 10px; padding: 0em; position:absolute; bottom: 0px; top: 0px; right: 0px; left: 0px;">
+                </div>
             </div>
             <div style="right:300px;width:10px;top:0;bottom:0;cursor:ew-resize" class="divider" control="pageX,right,width" id="main-contnt-divider"></div>
 
