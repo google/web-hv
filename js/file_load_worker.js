@@ -16,7 +16,7 @@ importScripts("../third_party/jszip.min.js");
 importScripts("constants.js");
 
 self.onmessage = function(e) {
-    var reader = new FileReader();
+    let reader = new FileReader();
     reader.onload = function () {
         handleLoadFile(reader).catch(function(e) {
             postMessage({type: TYPE_ERROR, message: e + ""});
@@ -26,18 +26,18 @@ self.onmessage = function(e) {
 }
 
 async function handleLoadFile(reader) {
-    var zip = new JSZip(reader.result);
+    let zip = new JSZip(reader.result);
 
     // Try loading as bug report
     {
-        var list = [];
-        var display_size = { };
+        let list = [];
+        let display_size = { };
 
         // Check for visible_windows.zip
-        var viewDump = zip.file("visible_windows.zip");
+        let viewDump = zip.file("visible_windows.zip");
         if (viewDump != null) {
             try {
-                var viewDumpZip = new JSZip(viewDump.asArrayBuffer());
+                let viewDumpZip = new JSZip(viewDump.asArrayBuffer());
                 for (x in viewDumpZip.files) {
                     list.push({
                         name: x,
@@ -51,18 +51,18 @@ async function handleLoadFile(reader) {
             }
         }
 
-        var bugFile = zip.file(/^bugreport/);
+        let bugFile = zip.file(/^bugreport/);
         if (bugFile != null && bugFile.length == 1) {
             return loadBugFile(bugFile[0], list, display_size);
         }
     }
 
-    var config = JSON.parse(zip.file("config.json").asText());
+    let config = JSON.parse(zip.file("config.json").asText());
     if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
         throw "Missing data"
     }
 
-    var appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
+    let appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
     postMessage(appInfo);
 }
 
@@ -106,10 +106,10 @@ async function loadBugFile(bugFile, list, display_size) {
 
     // Parses a list of sections
     function parseSectionList(parsingEntry) {
-        var match;
-        var result = [];
+        let match;
+        let result = [];
         while (match = parsingEntry.titleRegX.exec(liner.next())) {
-            var section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
+            let section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
 
             parseSection(section, match[parsingEntry.titleGroups.spaces], parsingEntry);
             result.push(section);
@@ -198,7 +198,7 @@ function newLiner(data /* array buffer */) {
     let nextLine;
 
     function parseNextChunk() {
-        var length = Math.min(remaining, chuckSize);
+        let length = Math.min(remaining, chuckSize);
         let dataView = new DataView(data, byteStart, length);
         remaining -= length;
         byteStart += chuckSize;
@@ -206,7 +206,7 @@ function newLiner(data /* array buffer */) {
     }
 
     function consumeNextLine() {
-        var result = nextLine;
+        let result = nextLine;
 
         // Initialize the next line
         while (linesIndex >= lines.length - 1 && remaining > 0) {

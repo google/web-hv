@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var AdbKey = (function () {
+let AdbKey = (function () {
     const ADB_WEB_CRYPTO_ALGORITHM = {
         name: 'RSASSA-PKCS1-v1_5',
         hash: {
@@ -63,7 +63,7 @@ var AdbKey = (function () {
         const rr = r.multiply(r).mod(key.n);
 
         const buffer = new ArrayBuffer(PUBKEY_ENCODED_SIZE);
-        var dv = new DataView(buffer);
+        let dv = new DataView(buffer);
         dv.setUint32(0, MODULUS_SIZE_WORDS, true);
         dv.setUint32(WORD_SIZE, n0inv, true);
         new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength / Uint8Array.BYTES_PER_ELEMENT).set(bigIntToFixedByteArray(key.n, MODULUS_SIZE).reverse(), 2 * WORD_SIZE);
@@ -94,22 +94,22 @@ var AdbKey = (function () {
      * Generates a new key and stores it in local storate
      */
     async function generateNewKeyPair() {
-        var keypair = await Promise.resolve(crypto.subtle.generateKey({
+        let keypair = await Promise.resolve(crypto.subtle.generateKey({
             ...ADB_WEB_CRYPTO_ALGORITHM,
             modulusLength: MODULUS_SIZE_BITS,
             publicExponent: PUBLIC_EXPONENT,
         },
             ADB_WEB_CRYPTO_EXPORTABLE, ADB_WEB_CRYPTO_OPERATIONS));
-        var jwk = await Promise.resolve(crypto.subtle.exportKey('jwk', keypair.publicKey));
+        let jwk = await Promise.resolve(crypto.subtle.exportKey('jwk', keypair.publicKey));
 
-        var jsbnKey = new RSAKey();
+        let jsbnKey = new RSAKey();
         jsbnKey.setPublic(decodeWebBase64ToHex(jwk.n), decodeWebBase64ToHex(jwk.e));
 
         const bytes = encodeAndroidPublicKeyBytes(jsbnKey);
         const userInfo = 'unknown@web-hv';
-        var publicKey = btoa(String.fromCharCode.apply(null, bytes)) + ' ' + userInfo;
+        let publicKey = btoa(String.fromCharCode.apply(null, bytes)) + ' ' + userInfo;
 
-        var fullKey = await Promise.resolve(crypto.subtle.exportKey("jwk", keypair.privateKey));
+        let fullKey = await Promise.resolve(crypto.subtle.exportKey("jwk", keypair.privateKey));
         fullKey.publicKey = btoa(String.fromCharCode.apply(null, bytes)) + ' ' + userInfo;
 
         localStorage.cryptoKey = JSON.stringify(fullKey);
@@ -124,7 +124,7 @@ var AdbKey = (function () {
     }
 
     AdbKeyInternal.prototype.sign = function (token) {
-        var jwk = JSON.parse(this.fullKey);
+        let jwk = JSON.parse(this.fullKey);
 
         key = new RSAKey();
         key.setPrivateEx(
@@ -159,8 +159,8 @@ var AdbKey = (function () {
     }
 
     AdbKeyInternal.prototype.publicKey = async function () {
-        var json = await this.keyPromise;
-        var fullKey = JSON.parse(json);
+        let json = await this.keyPromise;
+        let fullKey = JSON.parse(json);
         return fullKey.publicKey;
     }
 

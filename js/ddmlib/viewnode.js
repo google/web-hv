@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-var INT_MIN_VALUE = -2147483648;
+let INT_MIN_VALUE = -2147483648;
 
 function VN_Property(fullname) {
     this.name = fullname;
@@ -21,9 +21,9 @@ function VN_Property(fullname) {
     this.type = "Uncategorized";
     this.fullname = fullname;
 
-    var colonIndex = fullname.indexOf(':');
+    let colonIndex = fullname.indexOf(':');
     if (colonIndex > 0) {
-        var type = fullname.substring(0, colonIndex);
+        let type = fullname.substring(0, colonIndex);
         this.type = type.charAt(0).toUpperCase() + type.slice(1);
         this.name = fullname.substring(colonIndex + 1);
     }
@@ -43,7 +43,7 @@ function ViewNode(name) {
 }
 
 ViewNode.prototype.getBoolean = function(name, dValue) {
-    var p = this.getProp(name);
+    let p = this.getProp(name);
     if (p) {
         return p.value == 'true';
     }
@@ -52,7 +52,7 @@ ViewNode.prototype.getBoolean = function(name, dValue) {
 
 
 ViewNode.prototype.getInt  = function(name, dValue) {
-    var p = this.getProp(name);
+    let p = this.getProp(name);
     if (p) {
         try {
             return parseInt(p.value);
@@ -62,7 +62,7 @@ ViewNode.prototype.getInt  = function(name, dValue) {
 }
 
 ViewNode.prototype.getFloat  = function(name, dValue) {
-    var p = this.getProp(name);
+    let p = this.getProp(name);
     if (p) {
         try {
             return parseFloat(p.value);
@@ -73,7 +73,7 @@ ViewNode.prototype.getFloat  = function(name, dValue) {
 
 ViewNode.prototype.updateNodeDrawn = function() {
     this.nodeDrawn = !this.willNotDraw;
-    for (var i = 0; i < this.children.length; i++) {
+    for (let i = 0; i < this.children.length; i++) {
         this.children[i].updateNodeDrawn();
         this.nodeDrawn |= (this.children[i].nodeDrawn && this.children[i].isVisible);
     }
@@ -115,7 +115,7 @@ ViewNode.prototype.loadCommonProperties = function(map) {
     this.scaleX = this.getFloat("scaleX", 1);
     this.scaleY = this.getFloat("scaleY", 1);
 
-    var descProp = this.getProp("contentDescription");
+    let descProp = this.getProp("contentDescription");
     this.contentDesc = descProp != null && descProp.value && descProp.value != "null"
         ? descProp.value : null;
 
@@ -125,7 +125,7 @@ ViewNode.prototype.loadCommonProperties = function(map) {
             ? descProp.value : null;
     }
 
-    var visibility = this.getProp("visibility");
+    let visibility = this.getProp("visibility");
     this.isVisible = !visibility || visibility.value == 0 || visibility.value == "VISIBLE";
 
     delete this.getProp;

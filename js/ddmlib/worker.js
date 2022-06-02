@@ -14,29 +14,29 @@
 
 importScripts("viewnode.js");
 
-var CMD_CONVERT_TO_STRING = 1;
-var CMD_PARSE_OLD_DATA = 2;
-var CMD_USE_PROPERTY_MAP = 4;
-var CMD_DEFLATE_STRING = 8;
-var CMD_SKIP_8_BITS = 16;
+let CMD_CONVERT_TO_STRING = 1;
+let CMD_PARSE_OLD_DATA = 2;
+let CMD_USE_PROPERTY_MAP = 4;
+let CMD_DEFLATE_STRING = 8;
+let CMD_SKIP_8_BITS = 16;
 
-var commonProps = null;
+let commonProps = null;
 
 function convertToString(data) {
-    var total = data.length;
-    var result = "";
-    for (var st = 8; st < total; st++) {
+    let total = data.length;
+    let result = "";
+    for (let st = 8; st < total; st++) {
         result += String.fromCharCode(data[st]);
     }
     return result;
 }
 
 self.onmessage = function(e) {
-    var msg = e.data;
-    var cmd = msg.cmd;
-    var data = msg.data;
+    let msg = e.data;
+    let cmd = msg.cmd;
+    let data = msg.data;
 
-    var bitShift = 0;
+    let bitShift = 0;
 
     if ((cmd & CMD_DEFLATE_STRING) != 0) {
         importScripts("../../third_party/pako/pako_inflate.min.js");
@@ -79,7 +79,7 @@ self.onmessage = function(e) {
         importScripts("parser_v2.js");
     }
 
-    var rootNode = parseNode(data, bitShift);
+    let rootNode = parseNode(data, bitShift);
     postMessage({
         root: rootNode
     });
