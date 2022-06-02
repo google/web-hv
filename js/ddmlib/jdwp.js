@@ -29,7 +29,7 @@ jdwp.prototype.STATUS_CONNECTED = 2;
 
 jdwp.prototype._onDisconnect = function () {
     this.status = this.STATUS_DISCONNECTED;
-    for (var i = 0; i < this.callbacks.length; i++) {
+    for (let i = 0; i < this.callbacks.length; i++) {
         if (this.callbacks[i]) {
             this.callbacks[i].reject();
         }
@@ -43,14 +43,14 @@ jdwp.prototype._onDisconnect = function () {
 }
 
 jdwp.prototype._connect = function () {
-    var that = this;
+    const that = this;
     this.status = this.STATUS_CONNECTING;
 
-    var socket = this.device.openStream("jdwp:" + this.pid);
+    const socket = this.device.openStream("jdwp:" + this.pid);
     socket.onClose = this._onDisconnect.bind(this);
     socket.keepOpen = true;
 
-    var cmd = "JDWP-Handshake";
+    const cmd = "JDWP-Handshake";
     socket.read(cmd.length, function (data) {
         data = ab2str(data);
         if (data == cmd) {
@@ -65,27 +65,27 @@ jdwp.prototype._connect = function () {
 
 jdwp.prototype._onConnect = function () {
     this.status = this.STATUS_CONNECTED;
-    var calls = this.pendingCalls;
+    const calls = this.pendingCalls;
     this.pendingCalls = [];
 
-    for (var i = 0; i < calls.length; i++) {
+    for (let i = 0; i < calls.length; i++) {
         this.socket.write(calls[i]);
     }
     this._readNextChunk();
 }
 
 jdwp.prototype._readNextChunk = function () {
-    var that = this;
+    const that = this;
     this.socket.read(11, function (data) {
-        var header = new DataInputStream(new Uint8Array(data));
-        var len = header.readInt();
-        var seq = header.readInt();
-        var flags = header.read();
-        var isCommand = flags != 128;
+        const header = new DataInputStream(new Uint8Array(data));
+        const len = header.readInt();
+        const seq = header.readInt();
+        const flags = header.read();
+        const isCommand = flags != 128;
 
         that.socket.read(len - 11, function (data) {
-            var reader = new DataInputStream(new Uint8Array(data));
-            var type = reader.readInt();   // chunk type
+            const reader = new DataInputStream(new Uint8Array(data));
+            const type = reader.readInt();   // chunk type
             reader.readInt();   // result length;
 
             if (isCommand) {
@@ -113,15 +113,15 @@ jdwp.prototype.destroy = function () {
  * @returns a promise for the result
  */
 jdwp.prototype.writeChunk = function (type, data) {
-    var result = deferred();
+    const result = deferred();
     if (data.constructor == DataOutputStream) {
         data = data.data;
     }
 
-    var packet = new DataOutputStream();
+    let packet = new DataOutputStream();
     packet.writeInt(11 + 8 + data.length); // package length
 
-    var seq = this.seq++;
+    const seq = this.seq++;
     packet.writeInt(seq);
 
     packet.writeByte(0);    // flags
@@ -146,13 +146,13 @@ jdwp.prototype.writeChunk = function (type, data) {
     return result;
 }
 
-var CHUNK_TYPES = {};
-var getChunkType = function (type) {
+const CHUNK_TYPES = {};
+const getChunkType = function (type) {
     if (type.constructor == String) {
         if (CHUNK_TYPES[type] == undefined) {
-            var buf = new ArrayBuffer(4);
-            var arr = new Uint8Array(buf);
-            for (var i = 0; i < 4; i++) {
+            const buf = new ArrayBuffer(4);
+            const arr = new Uint8Array(buf);
+            for (let i = 0; i < 4; i++) {
                 arr[3 - i] = type.charCodeAt(i);
             }
             CHUNK_TYPES[type] = new Int32Array(buf)[0];

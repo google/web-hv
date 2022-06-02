@@ -16,7 +16,7 @@ importScripts("../third_party/jszip.min.js");
 importScripts("constants.js");
 
 self.onmessage = function(e) {
-    var reader = new FileReader();
+    const reader = new FileReader();
     reader.onload = function () {
         handleLoadFile(reader).catch(function(e) {
             postMessage({type: TYPE_ERROR, message: e + ""});
@@ -26,18 +26,18 @@ self.onmessage = function(e) {
 }
 
 async function handleLoadFile(reader) {
-    var zip = new JSZip(reader.result);
+    const zip = new JSZip(reader.result);
 
     // Try loading as bug report
     {
-        var list = [];
-        var display_size = { };
+        const list = [];
+        const display_size = { };
 
         // Check for visible_windows.zip
-        var viewDump = zip.file("visible_windows.zip");
+        const viewDump = zip.file("visible_windows.zip");
         if (viewDump != null) {
             try {
-                var viewDumpZip = new JSZip(viewDump.asArrayBuffer());
+                const viewDumpZip = new JSZip(viewDump.asArrayBuffer());
                 for (x in viewDumpZip.files) {
                     list.push({
                         name: x,
@@ -51,31 +51,31 @@ async function handleLoadFile(reader) {
             }
         }
 
-        var bugFile = zip.file(/^bugreport/);
+        const bugFile = zip.file(/^bugreport/);
         if (bugFile != null && bugFile.length == 1) {
-            return loadBugFile(bugFile[0], list, display_size);
+            return loadBugFile(bugFile[0], list);
         }
     }
 
-    var config = JSON.parse(zip.file("config.json").asText());
+    const config = JSON.parse(zip.file("config.json").asText());
     if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
         throw "Missing data"
     }
 
-    var appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
+    const appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
     postMessage(appInfo);
 }
 
-async function loadBugFile(bugFile, list, display_size) {
+async function loadBugFile(bugFile, list) {
     if (list.length == 0) {
         throw "No hierarchy found";
     }
-    let liner = newLiner(bugFile.asArrayBuffer());
+    const liner = newLiner(bugFile.asArrayBuffer());
     const PARSING_DATA = [
         {
             key: "windows",
             header: "WINDOW MANAGER WINDOWS (dumpsys window windows)",
-            titleRegX: /^(\s+)Window \#\d+ Window\{([a-zA-Z\d]+) [a-zA-Z\d]+ ([^\}\s]+)\}\:/,
+            titleRegX: /^(\s+)Window #\d+ Window\{([a-zA-Z\d]+) [a-zA-Z\d]+ ([^}\s]+)\}:/,
             titleGroups: {
                 spaces: 1,
                 hashCode: 2,
@@ -85,13 +85,13 @@ async function loadBugFile(bugFile, list, display_size) {
             entries: {
                 ownerUid: / mOwnerUid=(\d+) /,
                 display: / containing=\[\d+,\d+\]\[(\d+,\d+)\]/,
-                dpi: / mFullConfiguration=\{[^\}]*\b(\d+)dpi\b/
+                dpi: / mFullConfiguration=\{[^}]*\b(\d+)dpi\b/
             }
         },
         {
             key: "packages",
             header: "Packages:",
-            titleRegX: /^(\s+)Package \[([a-z\_A-Z\d\.\/]+)\] \(([a-zA-Z\d]+)\)\:/,
+            titleRegX: /^(\s+)Package \[([a-z_A-Z\d./]+)\] \(([a-zA-Z\d]+)\):/,
             titleGroups: {
                 spaces: 1,
                 hashCode: 3,
@@ -106,10 +106,10 @@ async function loadBugFile(bugFile, list, display_size) {
 
     // Parses a list of sections
     function parseSectionList(parsingEntry) {
-        var match;
-        var result = [];
+        let match;
+        const result = [];
         while (match = parsingEntry.titleRegX.exec(liner.next())) {
-            var section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
+            const section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
 
             parseSection(section, match[parsingEntry.titleGroups.spaces], parsingEntry);
             result.push(section);
@@ -119,9 +119,9 @@ async function loadBugFile(bugFile, list, display_size) {
 
     function parseSection(output, spaces, parsingEntry) {
         while(liner.peek() != null && liner.peek().startsWith(spaces + " ")) {
-            let line = liner.next();
+            const line = liner.next();
             let match;
-            for (let [key, value] of Object.entries(parsingEntry.entries)) {
+            for (const [key, value] of Object.entries(parsingEntry.entries)) {
                 if (match = value.exec(line)) {
                     output[key] = match[1];
                 }
@@ -129,13 +129,13 @@ async function loadBugFile(bugFile, list, display_size) {
         }
     }
 
-    let parseData = { };
+    const parseData = { };
 
     let line;
     while ((line = liner.next()) != null) {
         PARSING_DATA.forEach(p => {
             if (p.header == line) {
-                let r = parseSectionList(p);
+                const r = parseSectionList(p);
                 if (!parseData[p.key] || parseData[p.key].length < r.length) {
                     parseData[p.key] = r;
                 }
@@ -150,7 +150,7 @@ async function loadBugFile(bugFile, list, display_size) {
                     entry.pid = window.ownerUid;
                     entry.name = window.name;
                     if (window.display) {
-                        let parts = window.display.split(",");
+                        const parts = window.display.split(",");
                         entry.display = {
                             width: parseInt(parts[0]),
                             height: parseInt(parts[1])
@@ -187,9 +187,9 @@ async function loadBugFile(bugFile, list, display_size) {
 }
 
 function newLiner(data /* array buffer */) {
-    let decoder = new TextDecoder();
+    const decoder = new TextDecoder();
     let remaining = data.byteLength;
-    let chuckSize = 1 << 22;
+    const chuckSize = 1 << 22;
 
     let byteStart = 0;
 
@@ -198,19 +198,19 @@ function newLiner(data /* array buffer */) {
     let nextLine;
 
     function parseNextChunk() {
-        var length = Math.min(remaining, chuckSize);
-        let dataView = new DataView(data, byteStart, length);
+        const length = Math.min(remaining, chuckSize);
+        const dataView = new DataView(data, byteStart, length);
         remaining -= length;
         byteStart += chuckSize;
         return decoder.decode(dataView).split("\n");
     }
 
     function consumeNextLine() {
-        var result = nextLine;
+        const result = nextLine;
 
         // Initialize the next line
         while (linesIndex >= lines.length - 1 && remaining > 0) {
-            let lastRow = lines[lines.length - 1];
+            const lastRow = lines[lines.length - 1];
             lines = parseNextChunk();
             // Merge the very last line with the first line of next chuck
             lines[0] = lastRow + lines[0];
