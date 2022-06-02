@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var progress;
+let progress;
 
 $(function () {
 	progress = $("#main-progress");
@@ -21,12 +21,12 @@ $(function () {
 		handleSelectDevice(navigator.usb.requestDevice({ filters: [ADB_DEVICE_FILTER] }));
 	});
 
-	var loadFile = function() {
+	const loadFile = function() {
 		if (!this.files || this.files.length < 1) {
 			return;
 		}
 		progress.show();
-		var w = createWorker("js/file_load_worker.js");
+		const w = createWorker("js/file_load_worker.js");
 		w.onerror = function(e) {
 			progress.hide();
 			toast("Not a valid view hierarchy file: " + e.message);
@@ -37,7 +37,7 @@ $(function () {
 					callbacks.windowsLoaded(e.data.list);
 				})
 			} else if (e.data.type == TYPE_ZIP) {
-				var appInfo = e.data;
+				const appInfo = e.data;
 				appInfo.data = new JSZip(appInfo.data);
 				hViewAction(appInfo);
 			} else if (e.data.type == TYPE_ERROR) {
@@ -50,7 +50,7 @@ $(function () {
 		w.postMessage(this.files[0]);
 	}
 	$("#hierarchy-picker-input").on("change", loadFile);
-	var pickerButton = $("#hierarchy-picker")
+	const pickerButton = $("#hierarchy-picker")
 		.click(() => $("#hierarchy-picker-input").click())
 		.on('dragover dragenter', () => pickerButton.addClass('drag_over'))
 		.on('dragleave dragend drop', () => pickerButton.removeClass('drag_over'))
@@ -84,22 +84,22 @@ $(function () {
 
 function refreshConnectedDevices() {
 	navigator.usb.getDevices().then(devices => {
-		let container = $("#connected-devices");
+		const container = $("#connected-devices");
 		container.empty();
 		$("#connected-devices-title")[devices.length == 0 ? "hide" : "show"]();
 		for (let i = 0; i < devices.length; i++) {
-			let d = devices[i];
-			let entry = $("<div>").data("device", d).appendTo(container).click(verifiedDeviceClicked).addClass("entry");
+			const d = devices[i];
+			const entry = $("<div>").data("device", d).appendTo(container).click(verifiedDeviceClicked).addClass("entry");
 			$('<div class="title">').text(d.manufacturerName + " " + d.productName).appendTo(entry);
 
-			let subText = $('<div class="subtext">').appendTo(entry);
+			const subText = $('<div class="subtext">').appendTo(entry);
 			$("<label>").text("serial: " + d.serialNumber).appendTo(subText);
 		}
 	});
 }
 
 function verifiedDeviceClicked() {
-	var d = $(this).data("device");
+	const d = $(this).data("device");
 	handleSelectDevice(Promise.resolve(d));
 }
 
@@ -115,7 +115,7 @@ function handleSelectDevice(devicePromise) {
 		});
 }
 
-var adbDevice;
+let adbDevice;
 
 async function openDevice(device) {
 	await device.close();
@@ -123,11 +123,11 @@ async function openDevice(device) {
 	if (!device.configuration) {
 		await device.selectConfiguration(1);
 	}
-	var interface = null;
-	var interfaces = device.configuration.interfaces;
-	for (var i = 0; i < interfaces.length; i++) {
+	let interface = null;
+	const interfaces = device.configuration.interfaces;
+	for (let i = 0; i < interfaces.length; i++) {
 		interface = interfaces[i];
-		var iface = interface.alternates[0];
+		const iface = interface.alternates[0];
 		if (iface.interfaceClass === ADB_INTERFACE_CLASS &&
 			iface.interfaceSubclass === ADB_INTERFACE_SUB_CLASS &&
 			iface.interfaceProtocol === ADB_INTERFACE_PROTOCOL) {
@@ -181,14 +181,14 @@ function onDeviceStateChange(newState) {
 
 	document.title = adbDevice.device.manufacturerName + " " + adbDevice.device.productName;
 	activityListAction(function(callbacks) {
-		var client = new DDMClient(adbDevice, callbacks);
+		const client = new DDMClient(adbDevice, callbacks);
 		client.loadOldWindows();
 		client.trackProcesses();
 	});
 }
 
 function switchTheme() {
-	var isDark = $(document.body).toggleClass("darkTheme").hasClass("darkTheme");
+	const isDark = $(document.body).toggleClass("darkTheme").hasClass("darkTheme");
 	$("#darkThemeSwitch").text(isDark ? "Lights on" : "Lights off");
 	localStorage.isDarkTheme = isDark;
 }

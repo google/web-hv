@@ -13,21 +13,21 @@
 // limitations under the License.
 
 
-var countFrontWhitespace = function(line) {
-    var m = line.match(/^\s+/);
+const countFrontWhitespace = function(line) {
+    const m = line.match(/^\s+/);
     return m ? m[0].length : 0
 };
 
-var loadProperties = function(node, data) {
-    var start = 0;
-    var stop;
+const loadProperties = function(node, data) {
+    let start = 0;
+    let stop;
 
     do {
-        var index = data.indexOf('=', start);
-        var property = new VN_Property(data.substring(start, index));
+        const index = data.indexOf('=', start);
+        const property = new VN_Property(data.substring(start, index));
 
-        var index2 = data.indexOf(',', index + 1);
-        var length = parseInt(data.substring(index + 1, index2));
+        const index2 = data.indexOf(',', index + 1);
+        const length = parseInt(data.substring(index + 1, index2));
         start = index2 + 1 + length;
         property.value = data.substring(index2 + 1, index2 + 1 + length);
 
@@ -47,31 +47,31 @@ var loadProperties = function(node, data) {
 /**
  * Parses the view node data and returns the root node
  */
-var parseNode = function(data) {
-    var stack = [];
-    var root = null;
-    var lastNode = null;
-    var lastWhitespaceCount = -INT_MIN_VALUE;
+const parseNode = function(data) {
+    const stack = [];
+    let root = null;
+    let lastNode = null;
+    let lastWhitespaceCount = -INT_MIN_VALUE;
     data = data.split("\n");
-    for (var l = 0; l < data.length - 1; l++) {
-        var line = data[l];
+    for (let l = 0; l < data.length - 1; l++) {
+        let line = data[l];
         if (line.toUpperCase() == "DONE.") {
             break;
         }
 
-        var whitespaceCount = countFrontWhitespace(line);
+        const whitespaceCount = countFrontWhitespace(line);
         if (lastWhitespaceCount < whitespaceCount) {
             stack.push(lastNode);
         } else if (stack.length) {
-            var count = lastWhitespaceCount - whitespaceCount;
-            for (var i = 0; i < count; i++) {
+            const count = lastWhitespaceCount - whitespaceCount;
+            for (let i = 0; i < count; i++) {
                 stack.pop();
             }
         }
 
         lastWhitespaceCount = whitespaceCount;
         line = line.trim();
-        var index = line.indexOf(' ');
+        const index = line.indexOf(' ');
         lastNode = new ViewNode(line.substring(0, index));
 
         line = line.substring(index + 1);
@@ -82,7 +82,7 @@ var parseNode = function(data) {
         }
 
         if (stack.length) {
-            var parent = stack[stack.length - 1];
+            const parent = stack[stack.length - 1];
             parent.children.push(lastNode);
         }
     }

@@ -32,7 +32,7 @@ function DDMClient(device, callbacks) {
 
 DDMClient.prototype.loadProp = async function (property, command) {
     this[property] = -1;
-    var msg = await this.device.shellCommand("getprop " + command);
+    const msg = await this.device.shellCommand("getprop " + command);
     if (msg != "") {
         this[property] = parseInt(msg);
     }
@@ -43,7 +43,7 @@ DDMClient.prototype.loadOldWindows = async function () {
     await this.device.shellCommand("service call window 2");
     await this.device.shellCommand("service call window 1 i32 4939");
 
-    var stream = this.device.openStream("tcp:4939");
+    const stream = this.device.openStream("tcp:4939");
     stream.onReceiveWrite = function (result) {
         result = ab2str(result);
         stream.sendReady();
@@ -59,15 +59,15 @@ DDMClient.prototype.loadOldWindows = async function () {
 DDMClient.prototype._listOldWindows = async function () {
     if (!this.workingOnWindowList) return;
 
-    var stream = this.device.openStream("tcp:4939");
+    const stream = this.device.openStream("tcp:4939");
     stream.write("LIST\n");
 
-    var list = await stream.readAll();
+    let list = await stream.readAll();
     list = list.trim().split("\n");
 
-    var result = [];
-    for (var i = 0; i < list.length - 1; i++) {
-        var parts = list[i].split(" ");
+    const result = [];
+    for (let i = 0; i < list.length - 1; i++) {
+        const parts = list[i].split(" ");
         result.push({
             type: TYPE_OLD,
             name: parts[1].trim(),
@@ -77,7 +77,7 @@ DDMClient.prototype._listOldWindows = async function () {
             device: this.device,
             use_new_api : false
         });
-    };
+    }
     result.use_new_api = false;
     if (this.workingOnWindowList) {
         this.callbacks.windowsLoaded(result);
@@ -85,11 +85,11 @@ DDMClient.prototype._listOldWindows = async function () {
 }
 
 DDMClient.prototype.readProcessList = function (socket) {
-    var that = this;
+    const that = this;
     socket.read(4, function (data) {
-        var len = parseInt(ab2str(data), 16);
+        const len = parseInt(ab2str(data), 16);
         socket.read(len, function (data) {
-            var list = ab2str(data).trim();
+            const list = ab2str(data).trim();
             that.parseProcessList(list.split("\n"));
             that.readProcessList(socket);
         });
@@ -100,17 +100,17 @@ DDMClient.prototype.trackProcesses = function () {
     if (DISABLE_JDWP) {
         return;
     }
-    var stream = this.device.openStream("track-jdwp");
+    const stream = this.device.openStream("track-jdwp");
     this.readProcessList(stream);
 }
 
 DDMClient.prototype.parseProcessList = function (list) {
-    var oldCache = this.processCache;
-    var newCache = {};
+    const oldCache = this.processCache;
+    const newCache = {};
     this.processCache = newCache;
     this.processCount = list.length;
-    for (var i = 0; i < list.length; i++) {
-        var pid = list[i];
+    for (let i = 0; i < list.length; i++) {
+        const pid = list[i];
         if (oldCache[pid]) {
             // process already exists
             newCache[pid] = oldCache[pid];
@@ -121,7 +121,7 @@ DDMClient.prototype.parseProcessList = function (list) {
         }
     }
 
-    for (var pid in oldCache) {
+    for (let pid in oldCache) {
         if (oldCache[pid]) {
             if (oldCache[pid].jdwp) {
                 oldCache[pid].jdwp.destroy();
@@ -132,19 +132,19 @@ DDMClient.prototype.parseProcessList = function (list) {
 }
 
 DDMClient.prototype.loadProcessName = async function (pid) {
-    var loader = new jdwp(pid, this.device);
+    const loader = new jdwp(pid, this.device);
     this.processCache[pid] = { jdwp: loader };
 
     try {
-        var data = await loader.writeChunk("HELO", [0, 0, 0, 1]);
+        const data = await loader.writeChunk("HELO", [0, 0, 0, 1]);
         data.readInt(); // server version
         data.readInt(); // process id
 
-        var vmlen = data.readInt();
-        var len = data.readInt();
+        const vmlen = data.readInt();
+        const len = data.readInt();
         data.readStr(vmlen);    // VM description len
 
-        var name = data.readStr(len);
+        const name = data.readStr(len);
 
         if (this.processCache[pid]) {
             this.processCache[pid].name = name;
@@ -160,11 +160,11 @@ DDMClient.prototype.loadProcessName = async function (pid) {
 
 DDMClient.prototype.reloadWindows = async function () {
     this.reloadCount++;
-    var myCount = this.reloadCount;
+    const myCount = this.reloadCount;
 
-    var windowToIdMap = {};
+    const windowToIdMap = {};
 
-    for (var pid in this.processCache) {
+    for (const pid in this.processCache) {
         this._loadWindowsForPid(pid, myCount, windowToIdMap).catch(e => {});
     }
 }
@@ -174,8 +174,8 @@ DDMClient.prototype._newWindowLoaded = function (myCount, windowToIdMap) {
         // This is called from some old call
         return;
     }
-    var windowList = [];
-    for (var pid in windowToIdMap) {
+    let windowList = [];
+    for (const pid in windowToIdMap) {
         windowList = windowList.concat(windowToIdMap[pid]);
     }
     if (windowList.length == 0) return;
@@ -194,21 +194,21 @@ DDMClient.prototype._newWindowLoaded = function (myCount, windowToIdMap) {
 }
 
 DDMClient.prototype._loadWindowsForPid = async function (pid, myCount, windowToIdMap) {
-    let jdwp = this.processCache[pid].jdwp;
-    var data = await jdwp.writeChunk("VULW", [0, 0, 0, 1]);
+    const jdwp = this.processCache[pid].jdwp;
+    const data = await jdwp.writeChunk("VULW", [0, 0, 0, 1]);
     if (myCount != this.reloadCount) {
         return;
     }
-    var count = data.readInt();
-    var windowList = [];
+    const count = data.readInt();
+    const windowList = [];
 
-    for (var i = 0; i < count; i++) {
-        var id = data.readStr();
-        var name = id;
+    for (let i = 0; i < count; i++) {
+        const id = data.readStr();
+        let name = id;
 
         if (this.processCache[pid].icon == undefined) {
-            var iconGetter = this._getIconForPid(pid);
-            var that = this;
+            const iconGetter = this._getIconForPid(pid);
+            const that = this;
             iconGetter.then(v =>  {
                 iconGetter.value = v
                 that.callbacks.iconLoaded(pid, v);
@@ -241,12 +241,12 @@ DDMClient.prototype._loadWindowsForPid = async function (pid, myCount, windowToI
 
 DDMClient.prototype._getIconForPid = async function (pid) {
     await this.iconLoader;
-    var response = (await this.device.shellCommand(
+    const response = (await this.device.shellCommand(
         "export CLASSPATH=/data/local/tmp/processicon.jar;exec app_process /system/bin ProcessIcon " + pid)).split("\n", 2);
     if ("OKAY" != response[0]) {
         throw "Unable to fetch icon";
     }
-    var r = createBlobFromDataUrl(response[1], "image/png");
+    const r = createBlobFromDataUrl(response[1], "image/png");
 
     // console.log("Loading icon for " + pid);
 
@@ -254,7 +254,7 @@ DDMClient.prototype._getIconForPid = async function (pid) {
 }
 
 function resetActiveState() {
-    for (var i = 0; i < ActiveState.length; i++) {
+    for (let i = 0; i < ActiveState.length; i++) {
         ActiveState[i]();
     }
     ActiveState = [];
@@ -282,21 +282,21 @@ function createViewController(appInfo) {
 }
 
 function parseViewData(data, cmd, callback) {
-    var w = createWorker("js/ddmlib/worker.js");
+    const w = createWorker("js/ddmlib/worker.js");
     w.onerror = function () {
         callback.reject("Error parsing view data");
     }
     w.onmessage = function (e) {
-        var root = e.data.root;
-        var setParent = function (node) {
-            for (var i = 0; i < node.children.length; i++) {
+        const root = e.data.root;
+        const setParent = function (node) {
+            for (let i = 0; i < node.children.length; i++) {
                 node.children[i].parent = node;
                 setParent(node.children[i]);
             }
 
             // Update named properties.
             node.namedProperties = {};
-            for (var i = 0; i < node.properties.length; i++) {
+            for (let i = 0; i < node.properties.length; i++) {
                 node.namedProperties[node.properties[i].fullname] = node.properties[i];
             }
         }
@@ -317,13 +317,13 @@ class OfflineServiceController {
         this.use_new_api = appInfo.config.use_new_api;
     }
     loadViewList() {
-        var result = deferred();
-        var text = this.zip.file("hierarchy.txt").asText();
+        const result = deferred();
+        const text = this.zip.file("hierarchy.txt").asText();
         if (!text) {
             result.reject("Unable to load data");
         }
         else {
-            var cmd = CMD_PARSE_OLD_DATA;
+            let cmd = CMD_PARSE_OLD_DATA;
             if (!this.use_new_api) {
                 cmd = cmd | CMD_USE_PROPERTY_MAP;
             }
@@ -332,7 +332,7 @@ class OfflineServiceController {
         return result;
     }
     async captureView(viewName) {
-        var file = this.zip.file("img/" + viewName + ".png");
+        const file = this.zip.file("img/" + viewName + ".png");
         if (!file) {
             throw "Image not found";
         }
@@ -345,7 +345,7 @@ class BugReportServiceController {
     constructor(appInfo) {
         this.data = appInfo.data;
         this.use_new_api = true;
-        var display = appInfo.display;
+        const display = appInfo.display;
         this.display = null;
         if (display.width != undefined && display.width > 0 && display.height != undefined && display.height > 0) {
             this.display = display;
@@ -359,14 +359,14 @@ class BugReportServiceController {
         parseViewData(this.data, 0, result);
     }
     loadViewList() {
-        var result = deferred();
+        const result = deferred();
         this.loadViewList_(result);
 
         if (this.display != null) {
-            var that = this;
+            const that = this;
             result.then(node => {
                 if (node.windowX != undefined && node.windowY != undefined) {
-                    var crop = [node.windowX, node.windowY, node.width, node.height];
+                    const crop = [node.windowX, node.windowY, node.width, node.height];
                     that.loadScreenshot = function () {
                         return pickPngAndCrop(that.display, crop);
                     };
@@ -387,11 +387,11 @@ class BugReportServiceControllerLegacy extends BugReportServiceController {
     }
 
     loadViewList_(result) {
-        var binary_string = atob(this.data);
-        var len = binary_string.length;
-        var bytes = new Uint8Array( len );
-        for (var i = 0; i < len; i++)        {
-            var ascii = binary_string.charCodeAt(i);
+        const binary_string = atob(this.data);
+        const len = binary_string.length;
+        const bytes = new Uint8Array( len );
+        for (let i = 0; i < len; i++)        {
+            const ascii = binary_string.charCodeAt(i);
             bytes[i] = ascii;
         }
         parseViewData(bytes, CMD_DEFLATE_STRING, result);
@@ -399,26 +399,26 @@ class BugReportServiceControllerLegacy extends BugReportServiceController {
 }
 
 function pickPngAndCrop(display, crop) {
-    var result = deferred();
-    var el = $("<input type='file' accept='.png' />");
+    const result = deferred();
+    const el = $("<input type='file' accept='.png' />");
     el.on("change", function () {
 		if (!this.files || this.files.length < 1) {
 			return;
 		}
-        var file = this.files[0];
-		var reader = new FileReader();
+        const file = this.files[0];
+		const reader = new FileReader();
 		reader.onload = function () {
-            var img = createImageBitmap(new Blob([new Uint8Array(reader.result)]));
+            const img = createImageBitmap(new Blob([new Uint8Array(reader.result)]));
             img.then(d => {
-                var canvas = document.createElement('canvas');
+                const canvas = document.createElement('canvas');
                 canvas.width = crop[2]; canvas.height = crop[3];
-                var ctx = canvas.getContext('2d');
-                var sx = d.width / display.width;
-                var sy = d.height / display.height;
+                const ctx = canvas.getContext('2d');
+                const sx = d.width / display.width;
+                const sy = d.height / display.height;
                 ctx.drawImage(d, crop[0] * sx, crop[1] * sy, crop[2] * sx, crop[3] * sy, 0, 0, crop[2], crop[3]);
 
-                var dataurl = canvas.toDataURL();
-                var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+                const dataurl = canvas.toDataURL();
+                const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
                 result.accept(createBlobFromDataUrl(arr[1], mime));
             });
 		}
@@ -429,9 +429,9 @@ function pickPngAndCrop(display, crop) {
 }
 
 function createBlobFromDataUrl(dataUrl, mime) {
-    var bstr = atob(dataUrl);
-    var n = bstr.length;
-    var u8arr = new Uint8Array(n);
+    const bstr = atob(dataUrl);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
     while(n--){
         u8arr[n] = bstr.charCodeAt(n);
     }
@@ -439,20 +439,20 @@ function createBlobFromDataUrl(dataUrl, mime) {
 }
 
 function searializeNode(root) {
-    var result = "";
+    let result = "";
 
-    var printNode = function (node, shift) {
-        var line = shift + node.name + " ";
-        for (var i = 0; i < node.properties.length; i++) {
-            var p = node.properties[i];
-            var value = p.value + "";
+    const printNode = function (node, shift) {
+        let line = shift + node.name + " ";
+        for (let i = 0; i < node.properties.length; i++) {
+            const p = node.properties[i];
+            let value = p.value + "";
             if (value == "") value = "null";
             value = value.replace(/(\r|\n)/g, ' ');
 
             line += p.fullname + "=" + value.length + "," + value + " ";
         }
         result += line + "\n";
-        for (var i = 0; i < node.children.length; i++) {
+        for (let i = 0; i < node.children.length; i++) {
             printNode(node.children[i], shift + " ");
         }
     }
@@ -474,20 +474,20 @@ class ViewServiceController {
         this.device = appInfo.device;
     }
     async loadViewList() {
-        var stream = this.device.openStream("tcp:4939");
+        const stream = this.device.openStream("tcp:4939");
         stream.write("DUMP " + this.id + "\n");
-        var text = await stream.readAll();
-        var result = deferred();
+        const text = await stream.readAll();
+        const result = deferred();
         parseViewData(text, CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP, result);
         return await result;
     }
     captureView(viewName) {
-        var stream = this.device.openStream("tcp:4939");
+        const stream = this.device.openStream("tcp:4939");
         stream.write("CAPTURE " + this.id + " " + viewName + "\n");
         return stream.readAll(new ByteResponseMerger());
     }
     profileView(viewName) {
-        var stream = this.device.openStream("tcp:4939");
+        const stream = this.device.openStream("tcp:4939");
         stream.write("PROFILE " + this.id + " " + viewName + "\n");
         return stream.readAll();
     }
@@ -507,47 +507,47 @@ class JdwpController {
         this.use_new_api = appInfo.use_new_api;
     }
     async loadViewList() {
-        var req = new DataOutputStream();
+        const req = new DataOutputStream();
         req.writeInt(1); // VURT_DUMP_HIERARCHY
         req.writeStr(this.windowId); // root view
         req.writeInt(0); // Do not skip children
         req.writeInt(1); // Include properties
-        var cmd = CMD_CONVERT_TO_STRING | CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP;
+        let cmd = CMD_CONVERT_TO_STRING | CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP;
         if (this.use_new_api) {
             req.writeInt(1); // Use v2
             cmd = CMD_SKIP_8_BITS;
         }
-        var reader = await this.jdwp.writeChunk("VURT", req);
+        const reader = await this.jdwp.writeChunk("VURT", req);
         throwIfFail(reader);
-        var result = deferred();
+        const result = deferred();
         parseViewData(reader.data, cmd, result);
         return await result;
     }
     async captureView(viewName) {
-        var req = new DataOutputStream();
+        const req = new DataOutputStream();
         req.writeInt(1); // VUOP_CAPTURE_VIEW
         req.writeStr(this.windowId); // root view
         req.writeStr(viewName); // target view
-        var reader = await this.jdwp.writeChunk("VUOP", req);
+        const reader = await this.jdwp.writeChunk("VUOP", req);
         throwIfFail(reader);
         return new Uint8Array(reader.data.buffer, 8);
     }
     async profileView(viewName) {
-        var req = new DataOutputStream();
+        const req = new DataOutputStream();
         req.writeInt(3); // VUOP_PROFILE_VIEW
         req.writeStr(this.windowId); // root view
         req.writeStr(viewName); // target view
-        var reader = await this.jdwp.writeChunk("VUOP", req);
+        const reader = await this.jdwp.writeChunk("VUOP", req);
         throwIfFail(reader);
         return new TextDecoder().decode(new Uint8Array(reader.data.buffer, 8));
     }
     async customCommand(viewName, commandData) {
-        var req = new DataOutputStream();
+        const req = new DataOutputStream();
         req.writeInt(4); // VUOP_INVOKE_VIEW_METHOD
         req.writeStr(this.windowId); // root view
         req.writeStr(viewName); // target view
         req.writeBytes(commandData);
-        var reader = await this.jdwp.writeChunk("VUOP", req);
+        const reader = await this.jdwp.writeChunk("VUOP", req);
         throwIfFail(reader);
     }
 }

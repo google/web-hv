@@ -12,25 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var hViewAction;
-var currentAppInfo;
+let hViewAction;
 
 $(function () {
-    var KEY_DIVIDER = "divider";
+    let currentAppInfo;
+    const KEY_DIVIDER = "divider";
 
-    var currentRootNode = null;
-    var selectedNode;
-    var favoriteProperties = [];
-    var viewController;
-    var showHiddenNodes = false;
-    var valueTypeMap = {};
+    let currentRootNode = null;
+    let selectedNode;
+    let favoriteProperties = [];
+    let viewController;
+    let showHiddenNodes = false;
+    let valueTypeMap = {};
 
-    var closedSections = {};
+    const closedSections = {};
 
     // Load favorite properties
     if (localStorage.favoriteProps) {
         try {
-            var tmp = JSON.parse(localStorage.favoriteProps);
+            const tmp = JSON.parse(localStorage.favoriteProps);
             if (tmp && tmp.constructor == Array) {
                 favoriteProperties = tmp;
             }
@@ -40,7 +40,7 @@ $(function () {
     // Load favorite properties
     if (localStorage.valueTypeMap) {
         try {
-            var tmp = JSON.parse(localStorage.valueTypeMap);
+            const tmp = JSON.parse(localStorage.valueTypeMap);
             if (tmp && tmp.constructor == Object) {
                 valueTypeMap = tmp;
             }
@@ -48,17 +48,17 @@ $(function () {
     }
 
     // Create dividers
-    var shouldSaveResizeData = function() {
+    const shouldSaveResizeData = function() {
         return !$("#hviewtabs").is(":visible");
     }
 
-    var createDaggerDownControl = function(divider) {
-        var invalue1 = parseInt(divider.e1.css(divider.right));
-        var invalue2 = parseInt(divider.e2.css(divider.width));
-        var invalueDragger = parseInt(divider.dragger.css(divider.right));
+    const createDaggerDownControl = function(divider) {
+        const invalue1 = parseInt(divider.e1.css(divider.right));
+        const invalue2 = parseInt(divider.e2.css(divider.width));
+        const invalueDragger = parseInt(divider.dragger.css(divider.right));
 
-        var v1 = divider.e1[divider.width]();
-        var v2 = divider.e2[divider.width]();
+        const v1 = divider.e1[divider.width]();
+        const v2 = divider.e2[divider.width]();
 
         if (v1 == 0 || v2 == 0) {
             return function() {};
@@ -80,22 +80,22 @@ $(function () {
         }
     }
 
-    var handleMouseDown = function(e) {
-        var divider = $(this).data(KEY_DIVIDER);
-        var start = e[divider.pageX];
-        var control = createDaggerDownControl(divider);
+    const handleMouseDown = function(e) {
+        const divider = $(this).data(KEY_DIVIDER);
+        const start = e[divider.pageX];
+        const control = createDaggerDownControl(divider);
 
-        var handleMouseMove = function(e) {
+        const handleMouseMove = function(e) {
             control(e[divider.pageX] - start);
         }
 
-        var handleMouseUp = function(e) {
+        const handleMouseUp = function(e) {
             $(document).unbind();
 
             // Save settings.
-            var data = {};
+            let data = {};
             $(".divider").each(function () {
-                var obj = $(this).data(KEY_DIVIDER);
+                const obj = $(this).data(KEY_DIVIDER);
                 data[$(this).attr("id")] = obj.dragger.css(obj.right);
             });
             if (shouldSaveResizeData()) {
@@ -109,16 +109,16 @@ $(function () {
         }).bind("touchend", handleMouseUp);
     }
 
-    var handleTouchStart = function(e) {
+    const handleTouchStart = function(e) {
         e.preventDefault();
         handleMouseDown.apply(this, e.originalEvent.touches);
     }
 
     $(".divider").each(function () {
-        var el = $(this);
-        var controls = el.attr("control").split(",");
+        const el = $(this);
+        const controls = el.attr("control").split(",");
 
-        var obj = {
+        const obj = {
             dragger: el,
             pageX: controls[0],
             right: controls[1],
@@ -132,16 +132,16 @@ $(function () {
     }).mousedown(handleMouseDown).bind("touchstart", handleTouchStart);
 
     // Apply resize data
-    var applyResizeData = function() {
+    const applyResizeData = function() {
         if (localStorage.resizeData && shouldSaveResizeData()) {
-            let data = JSON.parse(localStorage.resizeData);
-            for (var id in data) {
-                var divider = $("#" + id).data(KEY_DIVIDER);
+            const data = JSON.parse(localStorage.resizeData);
+            for (const id in data) {
+                const divider = $("#" + id).data(KEY_DIVIDER);
                 if (!divider || (typeof data[id]) != "string") {
                     continue;
                 }
-                var invalueDragger = parseInt(divider.dragger.css(divider.right));
-                var val = parseInt(data[id]);
+                const invalueDragger = parseInt(divider.dragger.css(divider.right));
+                const val = parseInt(data[id]);
                 createDaggerDownControl(divider)(invalueDragger - val);
             }
         }
@@ -149,11 +149,11 @@ $(function () {
 
     // In case of properties box, its width can change with changes to right panel.
     (function () {
-        var obj = $("#properties-divider").data(KEY_DIVIDER);
+        const obj = $("#properties-divider").data(KEY_DIVIDER);
         $("#rcontent").on("resizing", function () {
-            var w1 = obj.e1.width();
+            const w1 = obj.e1.width();
             if (w1 < obj.l1) {
-                var delta = obj.l1 - w1;
+                const delta = obj.l1 - w1;
 
                 obj.e1.css("right", parseInt(obj.e1.css("right")) - delta);
                 obj.e2.css("width", parseInt(obj.e2.css("width")) - delta);
@@ -163,34 +163,34 @@ $(function () {
     })();
 
     /********************************* Filter properties *********************************/
-    var filterProperties = function () {
-        var q = $("#pfilter").val().trim().toLocaleLowerCase();
-        var sections = $(".pcontainer .expandable");
-        var total = 0;
+    const filterProperties = function () {
+        const q = $("#pfilter").val().trim().toLocaleLowerCase();
+        const sections = $(".pcontainer .expandable");
+        let total = 0;
 
         if (q == "") {
             $(".pcontainer label").show();
             sections.each(function () {
                 total++;
-                var left = $(this).data("lbox").children();
+                const left = $(this).data("lbox").children();
                 if (!$(this).hasClass(CLS_CLOSED)) {
                     total += left.length;
                 }
-                for (var i = 0; i < left.length; i++) {
+                for (let i = 0; i < left.length; i++) {
                     // Remove any formatting.
-                    var child = $(left[i]).children().eq(1);
+                    const child = $(left[i]).children().eq(1);
                     child.text(child.text());
                 }
             });
         } else {
-            var re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
+            const re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
             sections.each(function () {
-                var found = 0;
-                var left = $(this).data("lbox").children();
-                var right = $(this).data("rbox").children();
-                for (var i = 0; i < left.length; i++) {
-                    var child = $(left[i]).children().eq(1);
-                    var itemText = child.text();
+                let found = 0;
+                const left = $(this).data("lbox").children();
+                const right = $(this).data("rbox").children();
+                for (let i = 0; i < left.length; i++) {
+                    const child = $(left[i]).children().eq(1);
+                    const itemText = child.text();
                     if (itemText.toLocaleLowerCase().indexOf(q) > -1) {
                         child.html(itemText.replace(re, "<b>$1</b>"));
                         found++;
@@ -218,11 +218,11 @@ $(function () {
     $("#pfilter").on("input", filterProperties);
 
     /** Loading image preview ****** */
-    var loadImage = function (node) {
+    const loadImage = function (node) {
         node.imageUrl = URL_LOADING;
         viewController.captureView(node.name).then(imageData => {
-            var blob = new Blob([imageData], { type: "image/png" });
-            var url = createUrl(blob);
+            const blob = new Blob([imageData], { type: "image/png" });
+            const url = createUrl(blob);
             node.imageUrl = url;
             if (node == currentRootNode) {
                 $("#border-box").css('background-image', 'url("' + node.imageUrl + '")');
@@ -239,8 +239,8 @@ $(function () {
         });
     }
 
-    var toggleFavorite = function (e) {
-        var name = $(this).data("pname");
+    const toggleFavorite = function (e) {
+        const name = $(this).data("pname");
         if ($(this).toggleClass(CLS_SELECTED).hasClass(CLS_SELECTED)) {
             favoriteProperties.push(name);
         } else {
@@ -251,10 +251,10 @@ $(function () {
         localStorage.favoriteProps = JSON.stringify(favoriteProperties);
     }
 
-    var propertySectionToggle = function (e) {
-        var me = $(this).toggleClass(CLS_CLOSED);
-        var left = me.data("lbox");
-        var right = me.data("rbox");
+    const propertySectionToggle = function (e) {
+        const me = $(this).toggleClass(CLS_CLOSED);
+        const left = me.data("lbox");
+        const right = me.data("rbox");
         if (closedSections[me.text()] = me.hasClass(CLS_CLOSED)) {
             left.slideUp("fast");
             right.slideUp("fast");
@@ -266,45 +266,45 @@ $(function () {
     }
 
     /********************************* Selecting a node *********************************/
-    var toHex = function(i, len) {
-        var s = i.toString(16);
+    const toHex = function(i, len) {
+        let s = i.toString(16);
         if (s.length < len) {
             s = "0000000000000000".slice(0, len - s.length) + s;
         }
         return s;
     }
 
-    var argb2rgba = function(i) {
+    const argb2rgba = function(i) {
         // ensure unsigned 32-bit int
-        var ui32 = (0xFFFFFFFF & i) >>> 0;
+        const ui32 = (0xFFFFFFFF & i) >>> 0;
         // take one down, pass it around
         return (((ui32 & 0xFFFFFF) << 8) | (ui32 >>> 24));
     }
 
-    var selectNode = function () {
+    const selectNode = function () {
         if ($(this).hasClass(CLS_SELECTED)) return;
         $("#vlist_content .selected").removeClass(CLS_SELECTED);
         $(this).addClass(CLS_SELECTED);
 
         $("#border-box .selected, #image-preview").removeClass(CLS_SELECTED).css('background-image', 'none');
-        var box = $(this).data("box").addClass(CLS_SELECTED);
+        const box = $(this).data("box").addClass(CLS_SELECTED);
 
         // Render properties;
-        var node = $(this).data("node");
-        var nHolder = $("#p_name").empty();
-        var vHolder = $("#p_val").empty();
+        const node = $(this).data("node");
+        const nHolder = $("#p_name").empty();
+        const vHolder = $("#p_val").empty();
 
-        var lastType = "";
-        var nSubHolder = nHolder;
-        var vSubHolder = vHolder;
+        let lastType = "";
+        let nSubHolder = nHolder;
+        let vSubHolder = vHolder;
 
-        var addProp = function (p, type) {
+        const addProp = function (p, type) {
             if (type != lastType) {
                 lastType = type;
 
                 // Add section
-                var section = $("<label>").addClass(CLS_EXPANDABLE).addClass(CLS_WITH_ARROW).text(type).appendTo(nHolder).prepend("<span>");
-                var valspace = $("<label>").html("&nbsp;").appendTo(vHolder);
+                const section = $("<label>").addClass(CLS_EXPANDABLE).addClass(CLS_WITH_ARROW).text(type).appendTo(nHolder).prepend("<span>");
+                const valspace = $("<label>").html("&nbsp;").appendTo(vHolder);
 
                 nSubHolder = $("<div>").appendTo(nHolder);
                 vSubHolder = $("<div>").appendTo(vHolder);
@@ -321,54 +321,54 @@ $(function () {
                 }
             }
 
-            var pName = $("<label>").append($("<span />").text(p.name)).appendTo(nSubHolder);
-            var value = "" + p.value;
+            const pName = $("<label>").append($("<span />").text(p.name)).appendTo(nSubHolder);
+            const value = "" + p.value;
 
-            var labelTag = $("<label>");
+            const labelTag = $("<label>");
 
             if (value == "") {
                 labelTag.html("&nbsp;");
             } else {
-                var valueF = parseFloat(p.value);
-                var valueI = parseInt(p.value);
-                var colorWell = undefined;
+                const valueF = parseFloat(p.value);
+                const valueI = parseInt(p.value);
+                let colorWell = undefined;
 
                 if (!isNaN(valueF)) {
                     // Numbers could mean any number (sorry) of things, so let's try to show 
                     // some relevant interpretations, switchable via <option> drop-down.
-                    var selectTag = $(`<select name="${p.name}">`).append($("<option value='default'>").text(value));
+                    const selectTag = $(`<select name="${p.name}">`).append($("<option value='default'>").text(value));
                     if (viewController.density > 0) {
-                        var dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
+                        const dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
                         if (Math.abs(dp) < 10000) {
                             // probably a reasonable dimension
                             selectTag.append($("<option value='size-dp'>").text(dp + " dp"));
                         }
                     }
                     if (valueF == valueI) {
-                        var valueU = valueI >>> 0;
-                        var valueHex = "";
+                        const valueU = valueI >>> 0;
+                        let valueHex = "";
                         if (p.name.search(/color$/i) >= 0) {
                             valueHex = toHex(valueU, 8);
                             selectTag.append(
                                 $("<option value='color-hex'>").text("#" + valueHex)
                             );
                         } else {
-                            var valueHex = toHex(valueU);
+                            valueHex = toHex(valueU);
                             selectTag.append($("<option value='falgs-hex'>").text("0x" + valueHex));
                         }
                         if (valueHex) {
                             colorWell = $("<div>").addClass(CLS_COLORWELL);
                             selectTag.change(() => {
-                                var myVal = "" + selectTag.val();
+                                const myVal = "" + selectTag.val();
                                 if (myVal.startsWith("#")) {
-                                    var webColor = '#' + toHex(argb2rgba(valueU), 8);
+                                    const webColor = '#' + toHex(argb2rgba(valueU), 8);
                                     colorWell.css('display', 'inline-block').css('background-color', webColor);
                                 } else {
                                     colorWell.hide();
                                 }
                             })
                         }
-                        var valuePref = valueTypeMap[p.name];
+                        const valuePref = valueTypeMap[p.name];
                         if (valuePref != undefined && selectTag.children().map(function() { return this.value; }).get().indexOf(valuePref) >= 0) {
                             selectTag.val(valuePref);
                         }
@@ -387,15 +387,15 @@ $(function () {
         }
 
         // Selected properties
-        for (var i = 0; i < favoriteProperties.length; i++) {
-            var prop = node.namedProperties[favoriteProperties[i]];
+        for (let i = 0; i < favoriteProperties.length; i++) {
+            const prop = node.namedProperties[favoriteProperties[i]];
             if (prop) {
                 addProp(prop, "Favorites").addClass(CLS_SELECTED);
             }
         }
 
-        for (var i = 0; i < node.properties.length; i++) {
-            var p = node.properties[i];
+        for (let i = 0; i < node.properties.length; i++) {
+            const p = node.properties[i];
             if (favoriteProperties.indexOf(p.fullname) < 0) {
                 addProp(p, p.type);
             }
@@ -414,17 +414,17 @@ $(function () {
         }
     }
 
-    var saveValueTypeSelect = function() {
+    const saveValueTypeSelect = function() {
         valueTypeMap[$(this).attr("name")] = $(this).val();
-        var data = JSON.stringify(valueTypeMap);
+        const data = JSON.stringify(valueTypeMap);
         localStorage.valueTypeMap = data;
     }
 
-    var profileInfoBox = $("#profile-info");
-    var mouseOverNode = function () {
+    const profileInfoBox = $("#profile-info");
+    const mouseOverNode = function () {
         $(this).data("box").addClass(CLS_HOVER);
 
-        var node = $(this).data("node");
+        const node = $(this).data("node");
         if (node.profiled) {
             profileInfoBox.find("#profile-info-m").text(node.measureTime.toFixed(5));
             profileInfoBox.find("#profile-info-l").text(node.layoutTime.toFixed(5));
@@ -432,25 +432,17 @@ $(function () {
             profileInfoBox.show();            
         }
     }
-    var mouseOutNode = function () {
+    const mouseOutNode = function () {
         $(this).data("box").removeClass(CLS_HOVER);
         profileInfoBox.hide();
     }
 
-    var setEnabled = function (el, isEnabled) {
-        if (isEnabled) {
-            el.removeClass(CLS_DISABLED);
-        } else {
-            el.addClass(CLS_DISABLED);
-        }
-    }
-
-    var showNodeContext = function (e) {
+    const showNodeContext = function (e) {
         e.preventDefault();
         selectNode.call(this);
 
-        var node = $(this).data("node");
-        var menu = [
+        const node = $(this).data("node");
+        const menu = [
             {
                 text: "Save PNG",
                 icon: "ic_save",
@@ -498,44 +490,44 @@ $(function () {
     }
 
     /********************************* Rendering code *********************************/
-    var treeToggle = function (e) {
+    const treeToggle = function (e) {
         $(this).next()[$(this).toggleClass(CLS_CLOSED).hasClass(CLS_CLOSED) ? "hide" : "show"]();
     }
-    var treeToggleFromArrow = function (e) {
+    const treeToggleFromArrow = function (e) {
         $(this).parent().dblclick();
     }
 
-    var renderNode = function (node, container, boxContainer, maxW, maxH, leftShift, topshift, scaleX, scaleY) {
-        var newScaleX = scaleX * node.scaleX;
-        var newScaleY = scaleY * node.scaleY;
+    const renderNode = function (node, container, boxContainer, maxW, maxH, leftShift, topshift, scaleX, scaleY) {
+        const newScaleX = scaleX * node.scaleX;
+        const newScaleY = scaleY * node.scaleY;
 
-        var l = leftShift + (node.left + node.translateX) * scaleX + node.width * (scaleX - newScaleX) / 2;
-        var t = topshift + (node.top + node.translateY) * scaleY + node.height * (scaleY - newScaleY) / 2;
-        var boxPos = {
+        const l = leftShift + (node.left + node.translateX) * scaleX + node.width * (scaleX - newScaleX) / 2;
+        const t = topshift + (node.top + node.translateY) * scaleY + node.height * (scaleY - newScaleY) / 2;
+        const boxPos = {
             left: l,
             top: t,
             width: node.width * newScaleX,
             height: node.height * newScaleY,
         };
 
-        var box = $("<div>").css({
+        const box = $("<div>").css({
             left: (boxPos.left * 100 / maxW) + "%",
             top: (boxPos.top * 100 / maxH) + "%",
             width: (boxPos.width * 100 / maxW) + "%",
             height: (boxPos.height * 100 / maxH) + "%",
         }).appendTo(boxContainer).data("node", node);
 
-        var name = node.name.split(".");
+        let name = node.name.split(".");
         name = name[name.length - 1];
 
-        var desc = node.contentDesc;
+        const desc = node.contentDesc;
         if (desc != null) {
             name = name + " : " + desc;
         }
         node.desc = name;
 
-        var elWrap = $("<x-line-wrap>").text(name).append($("<x-profile>"));
-        var el = $("<label>").appendTo(container).addClass(CLS_WITH_ARROW)
+        const elWrap = $("<x-line-wrap>").text(name).append($("<x-profile>"));
+        const el = $("<label>").appendTo(container).addClass(CLS_WITH_ARROW)
             .data({
                 node: node,
                 box: box
@@ -550,20 +542,20 @@ $(function () {
 
         if (node.children.length) {
             el.addClass(CLS_EXPANDABLE).dblclick(treeToggle);
-            var container = $("<div>").addClass(CLS_TREENODE).appendTo(container);
-            var shiftX = l - node.scrollX;
-            var shiftY = t - node.scrollY;
-            for (var i = 0; i < node.children.length; i++) {
-                renderNode(node.children[i], container, boxContainer, maxW, maxH, shiftX, shiftY, newScaleX, newScaleY);
+            const newContainer = $("<div>").addClass(CLS_TREENODE).appendTo(container);
+            const shiftX = l - node.scrollX;
+            const shiftY = t - node.scrollY;
+            for (let i = 0; i < node.children.length; i++) {
+                renderNode(node.children[i], newContainer, boxContainer, maxW, maxH, shiftX, shiftY, newScaleX, newScaleY);
             }
         }
     }
 
-    var renderList = function (root) {
+    const renderList = function (root) {
         $("#hview").removeClass("hide").removeClass("hidden");
         $("#main-progress").hide();
 
-        var boxContent = $("#border-box").empty();
+        const boxContent = $("#border-box").empty();
         currentRootNode = root;
 
         // Clear all transform from the root, so that it matches the preview
@@ -620,18 +612,18 @@ $(function () {
     }
 
     /********************************* Preview Grid resize *********************************/
-    var resizeBoxView = function () {
+    const resizeBoxView = function () {
         if (!currentRootNode) return;
-        var container = $("#box-border-container");
-        var cW = container.width();
-        var cH = container.height();
+        const container = $("#box-border-container");
+        const cW = container.width();
+        const cH = container.height();
 
-        var mW = currentRootNode.width;
-        var mH = currentRootNode.height;
-        var scale = Math.min(cW / mW, cH / mH);
+        const mW = currentRootNode.width;
+        const mH = currentRootNode.height;
+        const scale = Math.min(cW / mW, cH / mH);
 
-        var w = scale * mW;
-        var h = scale * mH;
+        const w = scale * mW;
+        const h = scale * mH;
         $("#border-box").css({
             width: w,
             height: h,
@@ -642,9 +634,9 @@ $(function () {
     $("#rcontent, #sshot").on("resizing", resizeBoxView);
 
     /** ********************** Box hover handling ***************** */
-    var scrollToNode = function (node) {
+    const scrollToNode = function (node) {
         // expand nodes recursively
-        var parent = node.parent;
+        let parent = node.parent;
         while (parent) {
             if (parent.el.hasClass(CLS_EXPANDABLE) && parent.el.hasClass(CLS_CLOSED)) {
                 parent.el.removeClass(CLS_CLOSED).next().show();
@@ -655,13 +647,13 @@ $(function () {
     }
 
     $("#border-box").mouseover(function (e) {
-        var offset = $(this).offset();
+        const offset = $(this).offset();
 
-        var nodesHidden = !showHiddenNodes;
-        var widthFactor = currentRootNode.width / $(this).width();
-        var heightFactor = currentRootNode.height / $(this).height();
+        const nodesHidden = !showHiddenNodes;
+        const widthFactor = currentRootNode.width / $(this).width();
+        const heightFactor = currentRootNode.height / $(this).height();
 
-        var updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
+        const updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
             if (node.disablePreview) {
                 return null;
             }
@@ -672,11 +664,11 @@ $(function () {
                 return null;
             }
 
-            var wasFirstNoDrawChildNull = firstNoDrawChild[0] == null;
-            var boxpos = node.boxpos;
+            const wasFirstNoDrawChildNull = firstNoDrawChild[0] == null;
+            const boxpos = node.boxpos;
 
-            var boxRight = boxpos.width + boxpos.left;
-            var boxBottom = boxpos.top + boxpos.height;
+            const boxRight = boxpos.width + boxpos.left;
+            const boxBottom = boxpos.top + boxpos.height;
             if (node.clipChildren) {
                 clipX1 = Math.max(clipX1, boxpos.left);
                 clipY1 = Math.max(clipY1, boxpos.top);
@@ -684,9 +676,9 @@ $(function () {
                 clipY2 = Math.min(clipY2, boxBottom);
             }
             if (clipX1 < x && clipX2 > x && clipY1 < y && clipY2 > y) {
-                for (var i = node.children.length - 1; i >= 0; i--) {
-                    var child = node.children[i];
-                    var ret = updateSelection(child, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2);
+                for (let i = node.children.length - 1; i >= 0; i--) {
+                    const child = node.children[i];
+                    const ret = updateSelection(child, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2);
                     if (ret != null) {
                         return ret;
                     }
@@ -708,15 +700,15 @@ $(function () {
             return null;
         }
 
-        var lastMatch = $("#border-box div.hover").data("node");
-        var findBox = function (e) {
-            var x = (e.pageX - offset.left) * widthFactor;
-            var y = (e.pageY - offset.top) * heightFactor;
-            var firstNoDrawChild = [null];
+        let lastMatch = $("#border-box div.hover").data("node");
+        const findBox = function (e) {
+            const x = (e.pageX - offset.left) * widthFactor;
+            const y = (e.pageY - offset.top) * heightFactor;
+            const firstNoDrawChild = [null];
             return updateSelection(currentRootNode, x, y, firstNoDrawChild, 0, 0, currentRootNode.width, currentRootNode.height);
         }
-        var onMove = function (e) {
-            var found = findBox(e);
+        const onMove = function (e) {
+            const found = findBox(e);
             if (found != lastMatch) {
                 if (lastMatch) {
                     lastMatch.el.removeClass(CLS_HOVER);
@@ -732,13 +724,13 @@ $(function () {
         }
 
         $(this).unbind("mousemove").unbind("click").mousemove(onMove).click(function (e) {
-            var found = findBox(e);
+            const found = findBox(e);
             if (found) {
                 found.el.click();
                 scrollToNode(found);
             }
         }).unbind("contextmenu").bind("contextmenu", function (e) {
-            var found = findBox(e);
+            const found = findBox(e);
             if (found) {
                 showNodeContext.call(found.el.get(0), e);
             }
@@ -750,16 +742,16 @@ $(function () {
     });
 
     /** ********************** Context menu ********************** */
-    var collapseAll = function (node) {
+    const collapseAll = function (node) {
         if (node.el.hasClass(CLS_EXPANDABLE)) {
             node.el.addClass(CLS_CLOSED).next().hide();
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 collapseAll(node.children[i]);
             }
         }
     }
 
-    var onNodeContextMenuSelected = function () {
+    const onNodeContextMenuSelected = function () {
         switch (this.id) {
             case 0: // save png
                 saveFile(selectedNode.name + ".png", selectedNode.imageUrl);
@@ -792,19 +784,19 @@ $(function () {
     };
 
     /** ********************** Profile view ********************** */
-    var profileView = async function(node) {
-        var data = await viewController.profileView(node.name);
+    const profileView = async function(node) {
+        let data = await viewController.profileView(node.name);
         data = data.split("\n");
-        var index = 0;
+        let index = 0;
 
         function loadProp(n) {
-            var line = data[index];
+            const line = data[index];
             index++;            
             if (!line || line == "-1 -1 -1" || line.toLocaleLowerCase() == "done.") {
                 return false;
             }
 
-            var times = line.split(" ");
+            const times = line.split(" ");
             n.measureTime = (parseInt(times[0]) / 1000.0) / 1000.0;
             n.layoutTime = (parseInt(times[1]) / 1000.0) / 1000.0;
             n.drawTime = (parseInt(times[2]) / 1000.0) / 1000.0;
@@ -826,7 +818,7 @@ $(function () {
         const RED_THRESHOLD = 0.8;
         const YELLOW_THRESHOLD = 0.5;
         function addIndicator(el, name, value) {
-            var e = $("<a>").text(name).appendTo(el);
+            const e = $("<a>").text(name).appendTo(el);
             if (value >= RED_THRESHOLD) {
                 e.addClass("red");
             } else if (value >= YELLOW_THRESHOLD) {
@@ -837,27 +829,27 @@ $(function () {
         }
 
         function setProfileRatings(n) {
-            var N = n.children.length;
+            const N = n.children.length;
             if (N > 1) {
-                var totalMeasure = 0;
-                var totalLayout = 0;
-                var totalDraw = 0;
+                let totalMeasure = 0;
+                let totalLayout = 0;
+                let totalDraw = 0;
                 for (let i = 0; i < N; i++) {
-                    var child = n.children[i];
+                    const child = n.children[i];
                     totalMeasure += child.measureTime;
                     totalLayout += child.layoutTime;
                     totalDraw += child.drawTime;
                 }
                 for (let i = 0; i < N; i++) {
-                    var child = n.children[i];
-                    var el = child.el.find("x-profile").empty().show();
+                    const child = n.children[i];
+                    const el = child.el.find("x-profile").empty().show();
 
                     addIndicator(el, "M", child.measureTime / totalMeasure);
                     addIndicator(el, "L", child.layoutTime / totalLayout);
                     addIndicator(el, "D", child.drawTime / totalDraw);
                 }
             } else if (N == 1) {
-                var child = n.children[0];
+                const child = n.children[0];
                 // Add default
                 child.el.find("x-profile").empty().show()
                     .append($("<a>").text("M"))
@@ -873,10 +865,10 @@ $(function () {
 
 
     /** ********************** Node search ********************** */
-    var lastNodeSearchText = "";
+    let lastNodeSearchText = "";
     $("#btn-search-node").click(function(e) {
-        var searchInput;
-        var elementFactory = function(el, hideMenu) {
+        let searchInput;
+        const elementFactory = function(el, hideMenu) {
             searchInput = $("<input type=search placeholder='Search node'>").appendTo(el);
 
             // Use key up for enter, so that the user has time to press shift key
@@ -895,24 +887,24 @@ $(function () {
         showPopup(e, elementFactory);
         searchInput.val(lastNodeSearchText).focus().select();
 
-        var nodeSearch = function (dir) {
-            var query = searchInput.val();
+        const nodeSearch = function (dir) {
+            let query = searchInput.val();
             if (query == "") return;
             lastNodeSearchText = query;
             query = query.toLocaleLowerCase();
 
             // Search through boxes, as nodes might be collapsed.
-            var boxes = $("#border-box div");
-            var nodes = boxes.filter(function() {
+            const boxes = $("#border-box div");
+            const nodes = boxes.filter(function() {
                 return $(this).css("display") != "none";
             }).map(function () {
                 return $(this).data("node").el.get(0);
             });
 
-            var st = nodes.index(selectedNode.el);
-            var count = nodes.length;
+            let st = nodes.index(selectedNode.el);
+            const count = nodes.length;
 
-            for (var i = -1; i < count; i++) {
+            for (let i = -1; i < count; i++) {
                 st += dir;
                 if (st < 0) {
                     st = count - 1;
@@ -931,21 +923,21 @@ $(function () {
     });
 
     /** ********************** Custom command ********************** */
-    var ignoreNextKeyUp = false;
+    let ignoreNextKeyUp = false;
 
     $("#btn-custom-command").click(function (e) {
-        var commandInput;
-        var errorContainer;
-        var elementFactory = function(el) {
+        let commandInput;
+        let errorContainer;
+        const elementFactory = function(el) {
             commandInput = $("<input type=search placeholder='Custom command'>").appendTo(el);
             errorContainer = $("<div class='custom-command-error-wrapper'>").appendTo(el);
         }
-        var popup = showPopup(e, elementFactory);
+        const popup = showPopup(e, elementFactory);
 
 
         if (viewMethodList != null) {
             // Setup auto complete
-            var methodAutoComplete = new autoComplete({
+            const methodAutoComplete = new autoComplete({
                 selector: commandInput.get(0),
                 minChars: 1,
                 source: autoCompleteSource,
@@ -974,24 +966,24 @@ $(function () {
         });
     })
 
-    var executeCommand = function (cmd, errorContainer) {
+    const executeCommand = function (cmd, errorContainer) {
         cmd = cmd.trim();
-        var m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^\)]*)\)\;?$/);
+        const m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^)]*)\);?$/);
 
         if (!m) {
             errorContainer.showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
             return;
         }
 
-        var data = new DataOutputStream();
+        const data = new DataOutputStream();
         data.writeStr(m[1]);
 
         if (m[2].trim() != "") {
-            var params = m[2].split(",");
+            const params = m[2].split(",");
             data.writeInt(params.length);
-            for (var i = 0; i < params.length; i++) {
+            for (let i = 0; i < params.length; i++) {
                 try {
-                    var p = params[i].trim().toLocaleLowerCase();
+                    let p = params[i].trim().toLocaleLowerCase();
 
                     if (p == "false" || p == "true") {
                         // boolean
@@ -1017,34 +1009,34 @@ $(function () {
         viewController.customCommand(selectedNode.name, data.data).catch(errorContainer.showError.bind(errorContainer));
     }
 
-    var viewMethodList = null;
+    let viewMethodList = null;
 
-    var autoCompleteSource = function (term, suggest) {
+    const autoCompleteSource = function (term, suggest) {
         term = term.toLowerCase().trim();
-        var matches = [];
-        for (var i = 0; i < viewMethodList.length; i++) {
+        const matches = [];
+        for (let i = 0; i < viewMethodList.length; i++) {
             if (~viewMethodList[i][0].toLowerCase().indexOf(term)) matches.push(viewMethodList[i]);
         }
         suggest(matches);
     };
 
-    var suggestionRenderer = function (item, search) {
+    const suggestionRenderer = function (item, search) {
         // escape special characters
-        search = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        var re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
+        search = search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
         return '<div class="autocomplete-suggestion" data-val="' + item[0] + '">' + item[0].replace(re, "<b>$1</b>") + "(" + item[1] + ")" + '</div>';
     }
 
-    var loadSuggestions = async function (device) {
+    const loadSuggestions = async function (device) {
         await device.sendFile("/data/local/tmp/methods.jar", "commands/methods.jar");
-        var response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
+        let response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
         response = JSON.parse(response.split("\n", 2)[1]);
         viewMethodList = response;
     };
 
     /** ********************** Main Menu ********************** */
     $("#btn-options").click(function() {
-        var menu = [
+        const menu = [
             {
                 text: "Show hidden node",
                 icon: showHiddenNodes ? "ic_checked" : "ic_unchecked",
@@ -1092,7 +1084,7 @@ $(function () {
             })
         }
 
-        var offset = $(this).offset();
+        const offset = $(this).offset();
         showContext(menu, function (el) {
             switch(this.id) {
                 case 0:
@@ -1124,17 +1116,17 @@ $(function () {
                     switchTheme();
                     break;
                 case 6:
-                    var submenuOffset = el.addClass(CLS_SELECTED).offset();
+                    const submenuOffset = el.addClass(CLS_SELECTED).offset();
                     showPreviewContext({pageX: submenuOffset.left + el.width() / 2, pageY: submenuOffset.top + el.height() / 4})
-                    return true;    // Dont ide te existing popup
+                    return true;    // Don't ide te existing popup
             }
         },
         {pageX: offset.left, pageY: offset.top});
     });
 
-    var currentPreviewMode = 3;
-    var showPreviewContext = function(e) {
-        var menu = [
+    let currentPreviewMode = 3;
+    const showPreviewContext = function(e) {
+        const menu = [
             {
                 text: "Grid",
                 icon: currentPreviewMode == 0 ? "ic_checked" : "ic_unchecked",
@@ -1181,20 +1173,20 @@ $(function () {
 
     /** ********************** Show/hide hidden nodes ********************** */
     // Hides the hode and all its children recursively.
-    var hideNode = function (node, hide) {
+    const hideNode = function (node, hide) {
         hide = hide || !node.isVisible;
         if (hide) {
             node.box.hide();
             node.el.hide();
         }
         if (node.children.length) {
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 hideNode(node.children[i], hide);
             }
         }
     }
 
-    var showHiddenNodeOptionChanged = function () {
+    const showHiddenNodeOptionChanged = function () {
         if (showHiddenNodes) {
             $("#vlist_content label, #border-box div").show();
         } else {
@@ -1203,9 +1195,9 @@ $(function () {
     }
 
     /** ********************** Save hierarchy ********************** */
-    var saveHierarchy = async function () {
-        var zip = new JSZip();
-        var config = {
+    const saveHierarchy = async function () {
+        const zip = new JSZip();
+        const config = {
             version: 1,
             title: currentAppInfo.name,
             density: viewController.density,
@@ -1215,21 +1207,21 @@ $(function () {
         zip.file("config.json", JSON.stringify(config));
         zip.file("hierarchy.txt", searializeNode(currentRootNode));
 
-        var imgFolder = zip.folder("img");
+        const imgFolder = zip.folder("img");
 
-        var loaders = {};
+        const loaders = {};
         function loadImagesRecur(node) {
             if (node.imageUrl) {
                 loaders[node.name + ".png"] = doXhr(node.imageUrl, 'arraybuffer');
             }
 
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 loadImagesRecur(node.children[i]);
             }
         }
         loadImagesRecur(currentRootNode);
 
-        for (let name in loaders) {
+        for (const name in loaders) {
             if (loaders[name]) {
                 try {
                     imgFolder.file(name, await loaders[name], { binary: true });
