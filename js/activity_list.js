@@ -13,18 +13,18 @@
 // limitations under the License.
 
 /* Action to refresh activity list */
-var activityListAction = function (initializer) {
+let activityListAction = function (initializer) {
     progress.show();
-    var content = $("#device-list-content").empty();
+    let content = $("#device-list-content").empty();
 
-    var jdwpErrorContainer;
-    var windowLoaded;
-    var mainContent = $("<div>").appendTo(content);
+    let jdwpErrorContainer;
+    let windowLoaded;
+    let mainContent = $("<div>").appendTo(content);
 
-    var newApiChk = null;
+    let newApiChk = null;
 
-    var startHView = function () {
-        var info = $(this).data("appInfo");
+    let startHView = function () {
+        let info = $(this).data("appInfo");
         if (newApiChk != null && newApiChk.is(':checked')) {
             info.use_new_api = false;
         }
@@ -35,9 +35,9 @@ var activityListAction = function (initializer) {
         hViewAction(info);
     }
 
-    var renderActivities = function(container, list) {
+    let renderActivities = function(container, list) {
 
-        var buttonbar = $("<div class='button-bar'>").css({display: "flex"}).appendTo(container);
+        let buttonbar = $("<div class='button-bar'>").css({display: "flex"}).appendTo(container);
         if (list.use_new_api) {
             newApiChk = $('<input type="checkbox" />');
             $("<label class='old-api'>").appendTo(buttonbar).append(newApiChk).append($("<span class='slider'>")).append($("<span class='text'>").text("Load custom properties"));
@@ -53,12 +53,12 @@ var activityListAction = function (initializer) {
         if (list.hasIcons) {
             container.addClass("has-icons")
         }
-        for (var i = 0; i < list.length; i++) {
-            var l = list[i];
-            var entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
+        for (let i = 0; i < list.length; i++) {
+            let l = list[i];
+            let entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 
             if (list.hasIcons) {
-                var icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
+                let icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
                 if (l.icon && l.icon.value) {
                     icon.css("background-image", `url(${l.icon.value})`);
                 }
@@ -68,7 +68,7 @@ var activityListAction = function (initializer) {
                 l.name = "---";
             }
             $('<div class="title">').text(l.name).appendTo(entry);
-            var subText;
+            let subText;
             if (l.pid != undefined && l.pname != undefined) {
                 subText = `${l.pname} (${l.pid})`;
             } else if (l.pname != undefined) {
@@ -84,7 +84,7 @@ var activityListAction = function (initializer) {
         }
     }
 
-    var callbacks = {
+    let callbacks = {
         jdwpError: function () {
             if (!jdwpErrorContainer) {
                 jdwpErrorContainer = $("<div>").prependTo(content)

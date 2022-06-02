@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var swapAltElements = function(arr) {
-    for (var i = 0; i < arr.length; i += 2) {
-        var tmp = arr[i];
+let swapAltElements = function(arr) {
+    for (let i = 0; i < arr.length; i += 2) {
+        let tmp = arr[i];
         arr[i] = arr[i + 1];
         arr[i + 1] = tmp;
     }
@@ -37,25 +37,25 @@ DataInputStream.prototype.read = function() {
 }
 
 DataInputStream.prototype.readInt = function() {
-    var pos = this.pos;
+    let pos = this.pos;
     this.pos += 4;
     return this._view.getInt32(pos, !this.highFirst);
 }
 
 DataInputStream.prototype.readShort = function() {
-    var pos = this.pos;
+    let pos = this.pos;
     this.pos += 2;
     return this._view.getInt16(pos, !this.highFirst);
 }
 
 DataInputStream.prototype.readFloat = function() {
-    var pos = this.pos;
+    let pos = this.pos;
     this.pos += 4;
     return this._view.getFloat32(pos, !this.highFirst);
 }
 
 DataInputStream.prototype.readDouble = function() {
-    var pos = this.pos;
+    let pos = this.pos;
     this.pos += 8;
     return this._view.getFloat64(pos, !this.highFirst);
 };
@@ -69,7 +69,7 @@ DataInputStream.prototype.readStr = function(len) {
     if (len == undefined) {
         len = this.readInt();
     }
-    var slice = this.data.subarray(this.pos, this.pos += 2 * len);
+    let slice = this.data.subarray(this.pos, this.pos += 2 * len);
     if (this.highFirst) {
         swapAltElements(slice);
     }
@@ -78,8 +78,8 @@ DataInputStream.prototype.readStr = function(len) {
 }
 
 DataInputStream.prototype.readStrSmall = function() {
-    var len = this.readShort();
-    var slice = this.data.subarray(this.pos, this.pos += len);
+    let len = this.readShort();
+    let slice = this.data.subarray(this.pos, this.pos += len);
     slice = new Uint8Array(slice.buffer, slice.byteOffset, len);
     return String.fromCharCode.apply(null, slice);
 }

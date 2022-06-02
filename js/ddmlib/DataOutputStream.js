@@ -32,8 +32,8 @@ DataOutputStream.prototype.writeByte = function(byte, pos) {
 
 DataOutputStream.prototype.writeBytes = function(bytes, pos) {
     if (pos == undefined) pos = this.data.length;
-    var length = bytes.length;
-    for (var i = 0; i < length; i++, pos++) {
+    let length = bytes.length;
+    for (let i = 0; i < length; i++, pos++) {
         this.data[pos] = bytes[i];
     }
 }
@@ -47,16 +47,16 @@ DataOutputStream.prototype.writeInt = function(number, pos) {
 }
 
 DataOutputStream.prototype.writeFloat = function(number, pos) {
-    var arr = new Float32Array(1);
+    let arr = new Float32Array(1);
     arr[0] = number;
     arr = new Int32Array(arr.buffer, arr.byteOffset);
     this.writeInt(arr[0]);
 }
 
 DataOutputStream.prototype.writeStr = function(str, doNotWriteLen) {
-    var buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
-    var bufView = new Uint16Array(buf);
-    for (var i = 0; i < str.length; i++) {
+    let buf = new ArrayBuffer(str.length * 2); // 2 bytes for each char
+    let bufView = new Uint16Array(buf);
+    for (let i = 0; i < str.length; i++) {
         bufView[i] = str.charCodeAt(i);
     }
     bufView = new Uint8Array(buf);
