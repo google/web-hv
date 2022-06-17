@@ -58,11 +58,15 @@ async function handleLoadFile(reader) {
     }
 
     let config = JSON.parse(zip.file("config.json").asText());
-    if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
+    let appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
+
+    if (config.version == 22) {
+        // TODO: Investigate better forms of identifying multi-file zip format data.
+        appInfo.type = TYPE_MULTI_FILE_ZIP;
+    } else if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
         throw "Missing data"
     }
 
-    let appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
     postMessage(appInfo);
 }
 

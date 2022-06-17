@@ -33,7 +33,7 @@ const TYPE_OLD = 1;
 const TYPE_JDWP = 2;
 const TYPE_BUG_REPORT = 3;
 const TYPE_BUG_REPORT_V2 = 4;  // Bug report with encoded view hierarchy
-
+const TYPE_MULTI_FILE_ZIP = 5;
 
 const CMD_CONVERT_TO_STRING = 1;
 const CMD_PARSE_OLD_DATA = 2;

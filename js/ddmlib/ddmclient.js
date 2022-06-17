@@ -282,7 +282,7 @@ function createViewController(appInfo) {
 }
 
 function parseViewData(data, cmd, callback) {
-    let w = createWorker("js/ddmlib/worker.js");
+    let w = new Worker("js/ddmlib/worker.js");
     w.onerror = function () {
         callback.reject("Error parsing view data");
     }

@@ -79,7 +79,7 @@
         <div id="hview" class="content-panel hide hidden">
             <!-- Left panel -->
             <div style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
-                <div class="frame showAsTab" id="vlist" style="left:0px;right:0px;bottom:30px;top:0px;position:absolute;" limit="400">
+                <div class="frame showAsTab" id="vlist" style="left:0px;right:0px;bottom:0px;top:0px;position:absolute;">
                     <!-- Search and custom command -->
                     <div id="hvTitle">
                         <a title="Back" id="btn-go-back"></a>
@@ -91,12 +91,10 @@
                     <div id="vlist_content" class="treeview"></div>
                 </div>
 
-                <div style="bottom:20px;height:10px;left:0;right:0;cursor:ns-resize" class="divider" control="pageY,bottom,height" id="left-panel-divider"></div>
+                <div style="display:none;bottom:20px;height:0px;left:0;right:0;cursor:ns-resize;" class="divider slider-group" control="pageY,bottom,height" id="left-panel-divider"></div>
 
-                <!-- TODO: This should be hidden when the data isn't time lapse -->
-                <!-- TODO: Hook up to mock data -->
-                <div class="frame" id="tl-range-container" style="position:absolute;left:0px;right:0px;height:20px;bottom:0px;overflow: hidden;" limit="20">
-                    <input class="tl-range" type="range" style="margin: 10px; padding: 0em; position:absolute; bottom: 0px; top: 0px; right: 0px; left: 0px;">
+                <div class="frame slider-group" id="tl-range-container" style="display:none;position:absolute;left:0px;right:0px;height:0px;bottom:0px;overflow:hidden;">
+                    <input type="range" class="tl-range slider-group" value="2" style="display:none;margin:10px;padding:0px;position:absolute;bottom:0px;top:0px;right:0px;left:0px;">
                 </div>
             </div>
             <div style="right:300px;width:10px;top:0;bottom:0;cursor:ew-resize" class="divider" control="pageX,right,width" id="main-contnt-divider"></div>

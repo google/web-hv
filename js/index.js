@@ -42,6 +42,8 @@ $(function () {
 				hViewAction(appInfo);
 			} else if (e.data.type == TYPE_ERROR) {
 				w.onerror(e.data);
+			} else if (e.data.type == TYPE_MULTI_FILE_ZIP) {
+				renderMultipleHViewsAction(new JSZip(e.data.data))
 			} else {
 				progress.hide();
 				toast("Unknown response " + e.data.type);

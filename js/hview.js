@@ -13,6 +13,7 @@
 // limitations under the License.
 
 let hViewAction;
+let renderMultipleHViewsAction;
 
 $(function () {
     let currentAppInfo;
@@ -560,18 +561,17 @@ $(function () {
         }
     }
 
-    let renderList = function (root) {
+    let renderList = function (root, container = $("#vlist_content").empty(), boxContent = $("#border-box").empty()) {
         $("#hview").removeClass("hide").removeClass("hidden");
         $("#main-progress").hide();
 
-        let boxContent = $("#border-box").empty();
         currentRootNode = root;
 
         // Clear all transform from the root, so that it matches the preview
         root.scaleX = root.scaleY = 1;
         root.translateX = root.translateY = 1;
 
-        renderNode(root, $("#vlist_content").empty(), boxContent, root.width, root.height, 0, 0, 1, 1);
+        renderNode(root, container, boxContent, root.width, root.height, 0, 0, 1, 1);
         resizeBoxView();
         $("#vlist_content label").first().click();
         showHiddenNodeOptionChanged();
@@ -618,6 +618,83 @@ $(function () {
             $("#btn-go-back").unbind("click").hide();
         }
 
+    }
+
+    renderMultipleHViewsAction = function (jsZip) {
+        let vListJQueries /* jQuery[] */  = []
+        let boxJQueries /* jQuery[] */ = []
+        let imageUrls /* URL[] */ = []
+    
+        /* Pre-process all the view hierarchies, and images, box UXs into
+           ready to use HTML that can be loaded into the web browser almost instantaneously.
+           Also immediately show the first parsed view hierarchy */
+        let hasInitiallyRendered = false
+    
+        for(let [filename, file] of Object.entries(jsZip.files)) {
+            /* JSZip.files references subFolders and hidden folders as well as direct child folders.
+               These need to be filtered out during preprocessing. */
+            if (!(filename.startsWith("_")) && file.dir && !(filename.endsWith("img/"))) {
+            
+                let subZip /* JSZip*/ = jsZip.folder(filename)
+                let subConfig /* JSONObject or JSONArray */ = JSON.parse(subZip.file("config.json").asText());
+    
+                let appInfo = { type: TYPE_ZIP, data: subZip, config: subConfig, name: subConfig.title }
+                if (!hasInitiallyRendered) {
+                    hasInitiallyRendered = true
+                    hViewAction(appInfo)
+                }
+    
+                let viewController /* OfflineServiceController */ = createViewController(appInfo)
+                viewController.loadViewList().then(rootNode => {
+                    viewController.captureView(rootNode.name).then(imageData => {
+                        let blob = new Blob([imageData], { type: "image/png" });
+                        let url = URL.createObjectURL(blob);
+    
+                        /* renderList attaches the html to the vList container and box container provided. 
+                           By providing temporary holder containers, and then storing those after running 
+                           "renderList", the UX can be preprocessed and prepared for later use. */
+                        let tBox = $("<div>");
+                        let tVList = $("<div>");
+                        renderList(rootNode, tVList, tBox)
+    
+                        /* Because parsing the view list nodes and creating the image urls
+                           is an asynchronous process, push them onto the respective arrays
+                           all at the same time. Otherwise, the ordering might be mismatched. */
+                        imageUrls.push(url)
+                        vListJQueries.push(tVList)
+                        boxJQueries.push(tBox)
+                    })
+                })
+            }
+        }
+    
+        /* Because the input slider is only shown for multi-moment view hierarchy data,
+           there are some UX updates necessary to show the correct UX. */
+        $(".slider-group").show()
+        $("#vlist").css("bottom", "30px");
+        $("#tl-range-container").css("height", "20px")
+        $("#left-panel-divider").css("height", "10px")
+    
+        let previousIndex = 0;
+        $(".tl-range").on("input change", (jQueryEvent) => {	
+
+            // Divide by 101 rather than 100 to avoid IndexOutOfBoundsException on right-most range selection
+            let index = Math.floor((jQueryEvent.target.value / 101) * vListJQueries.length)
+            if (previousIndex != index) {
+                /* appendTo removes all children from their previous jQuery and appends them to the newly specified jQuery element.
+                   That is why the former jQuery children are being saved and stored in their respective arrays again. */
+                vListJQueries[previousIndex] = $("<div>").append($("#vlist_content").children().detach())
+                vListJQueries[index].children().appendTo("#vlist_content")
+
+                boxJQueries[previousIndex] = $("<div>").append($("#border-box").children().detach())
+                boxJQueries[index].children().appendTo("#border-box")
+    
+                applyResizeData();
+                $("#border-box").css('background-image', 'url("' + imageUrls[index] + '")');
+
+                previousIndex = index
+            }
+        })
     }
 
     /********************************* Preview Grid resize *********************************/
