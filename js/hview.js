@@ -1103,6 +1103,7 @@ $(function () {
                     saveHierarchy();
                     break;
                 case 2:
+                    showHiddenNodes = false;
                     hViewAction(currentAppInfo);
                     break;
                 case 3:
