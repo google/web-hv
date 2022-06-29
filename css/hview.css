@@ -74,6 +74,7 @@
     transform: scale(0, 0);
     transition: all .2s cubic-bezier(0, 1.4, 1, 1.4);
 }
+
 .pcontainer span.star.selected:after {
     opacity: 1;
     transform: none;
@@ -95,6 +96,10 @@
     z-index: 1;
 }
 
+#border-box.no-image-preview div {
+    box-shadow: 0 0 0 1px black;
+}
+
 #border-box.hide-my-bg div {
     box-shadow: 0 0 0 1px #ddd inset;
 }
@@ -113,6 +118,23 @@
     z-index: 1000;
 }
 
+#border-box.no-image-preview div.hover {
+    box-shadow: 0 0 0 1px black;
+    background: var(--under-cursor-color) !important;
+    opacity: 0.75;
+}
+
+#border-box.no-image-preview div.selected {
+    box-shadow: 0 0 0 1px black;
+    background: var(--selected-color);
+    opacity: 0.5;
+}
+
+#border-box.no-image-preview div.last_selected {
+    box-shadow: 0 0 0 1px black;
+    background: var(--last-selected-color);
+    opacity: 0.5;
+}
 
 #image-preview {
     position: absolute;

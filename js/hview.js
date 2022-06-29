@@ -231,10 +231,13 @@ $(function () {
                 node.box.css('background-image', 'url("' + node.imageUrl + '")');
                 $("#image-preview").empty().css('background-image', 'url("' + node.imageUrl + '")');
             }
-        }).catch(() => {
+        }).catch((e) => {
             node.imageUrl = null;
             if (node.box.hasClass(CLS_SELECTED)) {
                 $("#image-preview").showError("Error loading image");
+            }
+            if (e == NO_IMAGE_LOADED_MESSAGE && shouldEnableImagePreviewMode()) {
+                $("#border-box").addClass(CLS_NO_IMAGE_PREVIEW)
             }
         });
     }
@@ -293,6 +296,12 @@ $(function () {
         const node = $(this).data("node");
         const nHolder = $("#p_name").empty();
         const vHolder = $("#p_val").empty();
+
+        if ($("#border-box").hasClass(CLS_NO_IMAGE_PREVIEW)) {
+            addClassToNodeAndChildNodeBoxes(node, CLS_SELECTED)
+        } else {
+            node.box.addClass(CLS_SELECTED)
+        }
 
         let lastType = "";
         let nSubHolder = nHolder;
@@ -412,6 +421,21 @@ $(function () {
         } else {
             loadImage(node);
         }
+    }
+
+    const addClassToNodeAndChildNodeBoxes = (node /* ViewNode */, _class /* String */) => {
+        if (node != null) {
+            if (node.box != null) {
+                node.box.addClass(_class)
+            }
+            for (let i = 0; i < node.children.length; i++) {
+                addClassToNodeAndChildNodeBoxes(node.children[i], _class)
+            }
+        }
+    }
+
+    const shouldEnableImagePreviewMode = () => {
+        return $("#border-box").css('background-image') == 'none'  && $("#image-preview").css('background-image') == 'none'
     }
 
     const saveValueTypeSelect = function() {
@@ -1155,19 +1179,20 @@ $(function () {
         showContext(menu, function () {
             switch (this.id) {
                 case 0:  // only grid
-                    $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+                    $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG).addClass(CLS_NO_IMAGE_PREVIEW);
                     $("#image-preview").hide();
                     break;
                 case 1: // Only image
                     $("#image-preview").show();
+                    $("#border-box").removeClass(CLS_NO_IMAGE_PREVIEW);
                     break;
                 case 2: // both
                     $("#image-preview").hide();
-                    $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+                    $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG).addClass(CLS_NO_IMAGE_PREVIEW);
                     break;
                 case 3: // App view
                     $("#image-preview").hide();
-                    $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG);
+                    $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG).toggleClass(CLS_NO_IMAGE_PREVIEW, shouldEnableImagePreviewMode());
                     break;
             }
             currentPreviewMode = this.id;

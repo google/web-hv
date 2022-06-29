@@ -334,7 +334,7 @@ class OfflineServiceController {
     async captureView(viewName) {
         const file = this.zip.file("img/" + viewName + ".png");
         if (!file) {
-            throw "Image not found";
+            throw NO_IMAGE_LOADED_MESSAGE;
         }
         return file.asUint8Array();
     }
@@ -377,7 +377,7 @@ class BugReportServiceController {
     }
 
     async captureView(viewName) {
-        throw "Image not found";
+        throw NO_IMAGE_LOADED_MESSAGE;
     }
 }
 

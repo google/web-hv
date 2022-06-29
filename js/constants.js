@@ -18,6 +18,7 @@ const CLS_TREENODE = "treenode";
 const CLS_SELECTED = "selected";
 const CLS_HOVER = "hover";
 const CLS_FORCE_NO_BG = "force-no-bg";
+const CLS_NO_IMAGE_PREVIEW = "no-image-preview";
 const CLS_HIDE_MY_BG = "hide-my-bg";
 const CLS_DISABLED = "disabled";
 const CLS_WITH_ARROW = "with_arrow";
@@ -25,6 +26,7 @@ const CLS_MULTI_TOGGLE = "multi-toggle"
 const CLS_COLORWELL = "colorwell";
 
 const URL_LOADING = "_loading_";
+const NO_IMAGE_LOADED_MESSAGE = "Image not found"
 
 const TYPE_ERROR = -1;
 const TYPE_ZIP = 0;
