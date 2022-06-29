@@ -16,6 +16,7 @@ const CLS_EXPANDABLE = "expandable";
 const CLS_CLOSED = "closed";
 const CLS_TREENODE = "treenode";
 const CLS_SELECTED = "selected";
+const CLS_LAST_SELECTED = "last_selected";
 const CLS_HOVER = "hover";
 const CLS_FORCE_NO_BG = "force-no-bg";
 const CLS_HIDE_MY_BG = "hide-my-bg";
