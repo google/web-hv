@@ -283,10 +283,11 @@ $(function () {
 
     const selectNode = function () {
         if ($(this).hasClass(CLS_SELECTED)) return;
-        $("#vlist_content .selected").removeClass(CLS_SELECTED);
+        $(".last_selected").removeClass(CLS_LAST_SELECTED);
+        $(".selected").removeClass(CLS_SELECTED).addClass(CLS_LAST_SELECTED);
         $(this).addClass(CLS_SELECTED);
 
-        $("#border-box .selected, #image-preview").removeClass(CLS_SELECTED).css('background-image', 'none');
+        $("#border-box .selected, #image-preview").css('background-image', 'none')
         const box = $(this).data("box").addClass(CLS_SELECTED);
 
         // Render properties;
