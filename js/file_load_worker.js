@@ -58,11 +58,14 @@ async function handleLoadFile(reader) {
     }
 
     const config = JSON.parse(zip.file("config.json").asText());
-    if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
+    const appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
+
+    if (config.version == MULTI_ZIP_CONFIG_VERSION) {
+        appInfo.type = TYPE_MULTI_FILE_ZIP;
+    } else if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
         throw "Missing data"
     }
 
-    const appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
     postMessage(appInfo);
 }
 

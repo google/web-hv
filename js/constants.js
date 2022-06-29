@@ -33,9 +33,14 @@ const TYPE_OLD = 1;
 const TYPE_JDWP = 2;
 const TYPE_BUG_REPORT = 3;
 const TYPE_BUG_REPORT_V2 = 4;  // Bug report with encoded view hierarchy
+const TYPE_MULTI_FILE_ZIP = 5;
 
 const CMD_CONVERT_TO_STRING = 1;
 const CMD_PARSE_OLD_DATA = 2;
 const CMD_USE_PROPERTY_MAP = 4;
 const CMD_DEFLATE_STRING = 8;
 const CMD_SKIP_8_BITS = 16;
+
+/* Temporary value to enable development with mock data
+   until a better way can be implemented using real data. */
+const MULTI_ZIP_CONFIG_VERSION = 22;
