@@ -598,17 +598,21 @@ $(function () {
         $("#windowTitle").text(document.title = title + " [" + appInfo.name + "]")
         currentAppInfo = appInfo;
 
-        if (appInfo.goBack) {
-            $("#btn-go-back").unbind("click").show().click(function() {
-                $("#btn-go-back").unbind("click");
-                $("#hview").addClass("hide").addClass("hidden");
-                $("#device-list-content").empty().show();
-                appInfo.goBack();
+        $("#btn-go-back")
+            .show()
+            .unbind("click")
+            .click(function() {
+                if (appInfo.goBack) {
+                    $("#btn-go-back").unbind("click");
+                    $("#hview").addClass("hide hidden")
+                    $("#device-list-content")
+                        .empty()
+                        .show();
+                    appInfo.goBack();
+                } else {
+                    window.location.reload()
+                }
             })
-        } else {
-            $("#btn-go-back").unbind("click").hide();
-        }
-
     }
 
     /********************************* Preview Grid resize *********************************/
