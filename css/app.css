@@ -28,7 +28,8 @@
     --progress-color: #1976D2;
 
     --selected-color: #3b99fc;
-    --selected-color2: rgba(59, 153, 252, 0.1);
+    --last-selected-color: #1586d779;
+    --under-cursor-color: #44aed8;
 
     --filter-color: #E65100;
     --error-color: #F44336;

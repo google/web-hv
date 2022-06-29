@@ -112,12 +112,15 @@
 }
 
 .treeview label:hover x-line-wrap, .treeview label.hover x-line-wrap{
-    background: var(--selected-color2);
+    background: var(--under-cursor-color) !important;
 }
 
 .treeview label.selected x-line-wrap {
     background: var(--selected-color);
-    color: #FFF;
+}
+
+.treeview label.last_selected x-line-wrap {
+    background: var(--last-selected-color);
 }
 
 .treenode {
