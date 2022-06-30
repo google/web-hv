@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 const CLS_EXPANDABLE = "expandable";
 const CLS_CLOSED = "closed";
 const CLS_TREENODE = "treenode";
