@@ -13,6 +13,7 @@
 // limitations under the License.
 
 let hViewAction;
+let multiHViewAction;
 
 $(function () {
     let currentAppInfo;
@@ -283,10 +284,11 @@ $(function () {
 
     const selectNode = function () {
         if ($(this).hasClass(CLS_SELECTED)) return;
-        $("#vlist_content .selected").removeClass(CLS_SELECTED);
+        $(".last_selected").removeClass(CLS_LAST_SELECTED);
+        $(".selected").removeClass(CLS_SELECTED).addClass(CLS_LAST_SELECTED);
         $(this).addClass(CLS_SELECTED);
 
-        $("#border-box .selected, #image-preview").removeClass(CLS_SELECTED).css('background-image', 'none');
+        $("#border-box .selected, #image-preview").css('background-image', 'none')
         const box = $(this).data("box").addClass(CLS_SELECTED);
 
         // Render properties;
@@ -551,18 +553,17 @@ $(function () {
         }
     }
 
-    const renderList = function (root) {
+    const renderList = function (root, vListContent = $("#vlist_content").empty(), boxContent = $("#border-box").empty()) {
         $("#hview").removeClass("hide").removeClass("hidden");
         $("#main-progress").hide();
 
-        const boxContent = $("#border-box").empty();
         currentRootNode = root;
 
         // Clear all transform from the root, so that it matches the preview
         root.scaleX = root.scaleY = 1;
         root.translateX = root.translateY = 1;
 
-        renderNode(root, $("#vlist_content").empty(), boxContent, root.width, root.height, 0, 0, 1, 1);
+        renderNode(root, vListContent, boxContent, root.width, root.height, 0, 0, 1, 1);
         resizeBoxView();
         $("#vlist_content label").first().click();
         showHiddenNodeOptionChanged();
@@ -570,32 +571,16 @@ $(function () {
 
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
-        $("#main-progress").show();
-        $("#device-list-content").empty().hide();
-        $("#darkThemeSwitch").remove();
-        $("#hview").removeClass("hide");
+        showViewHierarchyUX()
 
         viewController = createViewController(appInfo);
         viewController.loadViewList().then(v => {
             renderList(v);
             applyResizeData();
-        })
-            .catch(msg => {
-            // Error loading list.
-            $("#hview").removeClass("hide").removeClass("hidden");
-            $("#vlist_content").showError(msg ? msg : "Error loading view hierarchy");
-        });
+        }).catch(msg => { handleLoadingListError(msg) });
 
-        if (viewController.customCommand) {
-            $("#btn-custom-command").show();
-            loadSuggestions(viewController.device);
-        } else {
-            $("#btn-custom-command").hide();
-        }
-
-        let title = appInfo.name.split(".");
-        title = title[title.length - 1];
-        $("#windowTitle").text(document.title = title + " [" + appInfo.name + "]")
+        setupCustomCommandButton(viewController)
+        setupWindowTitle(appInfo)
         currentAppInfo = appInfo;
 
         $("#btn-go-back")
@@ -610,9 +595,165 @@ $(function () {
                         .show();
                     appInfo.goBack();
                 } else {
-                    window.location.reload()
+                    defaultOnBackButtonClicked()
                 }
             })
+    }
+
+    function showViewHierarchyUX() {
+        $("#vlist_content, #border-box").empty()
+        $("#main-progress").show()
+        $("#device-list-content").hide()
+        $("#darkThemeSwitch").hide()
+        $("#hview").removeClass("hide")
+    }
+
+    multiHViewAction = function (jsZip) {
+        showViewHierarchyUX()
+        $("#btn-go-back").show().unbind("click").click(defaultOnBackButtonClicked)
+        $(".slider-group").toggleClass("visible hidden")
+        $("#vlist, #border-box").addClass("multi-page")
+
+        const vListJQueries /* jQuery[] */  = []
+        const boxJQueries /* jQuery[] */ = []
+        const rootNodes /* ViewNode[] */ = []
+
+        /* Pre-process all the view hierarchies into ready to use HTML that can be loaded into the 
+           web browser with low latency. Also immediately show the first parsed view hierarchy */
+        for(const [filename, file] of Object.entries(jsZip.files)) {
+            /* The JSZip.files property references subFolders and hidden folders in addition to
+               the desired child folders. These need to be filtered out during preprocessing.
+               Note: This filtering process might not be necessary depending on the format of real data. */
+            if (!(filename.startsWith("_")) && file.dir && !(filename.endsWith("img/"))) {
+
+                const subZip /* JSZip */ = jsZip.folder(filename)
+                const subConfig /* JSONObject or JSONArray */ = JSON.parse(subZip.file("config.json").asText())
+                currentAppInfo /* Object */ = { type: TYPE_ZIP, data: subZip, config: subConfig, name: subConfig.title }
+
+                if (viewController == null) {
+                    viewController = createViewController(currentAppInfo)
+
+                    /* Some UI setup needs to wait to run until after the appInfo / view controller has been initialized. */
+                    setupCustomCommandButton(viewController)
+                    setupWindowTitle(currentAppInfo)
+                }
+
+                viewController.zip = subZip;
+                viewController.loadViewList().then(rootNode => {
+                    /* renderList attaches the html to the vList container and box container provided.
+                       By providing temporary holder containers, and then storing those after running
+                       renderList(), the UX can be preprocessed and stored for later use. */
+                    const tBox = $("<div>")
+                    const tVList = $("<div>")
+                    renderList(rootNode, tVList, tBox, vListJQueries.length)
+                    vListJQueries.push(tVList)
+                    boxJQueries.push(tBox)
+                    rootNodes.push(rootNode)
+
+                    /* If content isn't yet displayed, show the parsed content */
+                    if ($("#vlist_content label").length == 0) {
+                        tVList.children().appendTo("#vlist_content")
+                        tBox.children().appendTo("#border-box")
+                        applyResizeData();
+                    }
+                }).catch(msg => { handleLoadingListError(msg) });
+            }
+        }
+
+        let nodeMap /* Map<String, ViewNode[]> \ null */
+
+        function migrateSelectedState(index /* Integer */) {
+            if (nodeMap == null) {
+                nodeMap = new Map()
+                function constructNodeMap(nodes /* ViewNode[] */, rootNodeIndex /* Integer | null */ = null) {
+                    const noRootNodeIndexProvided = rootNodeIndex == null
+                    for (let i = 0; i < nodes.length; i++) {
+                        if (noRootNodeIndexProvided) {
+                            rootNodeIndex = i
+                        }
+                        let mapValue /* ViewNode[] | null */ = nodeMap.get(nodes[i].name)
+                        if (mapValue == null) {
+                            mapValue = Array(rootNodes.length)
+                            nodeMap.set(nodes[i].name, mapValue)
+                        }
+                        mapValue[rootNodeIndex] = nodes[i]
+                        constructNodeMap(nodes[i].children, rootNodeIndex)
+                    }
+                }
+                constructNodeMap(rootNodes)
+            }
+
+            function migrateOneClassOnOneComponent(clazz /* String */, containerId /* String */, elementAccessor /* String */) {
+                $("#" + containerId + " ." + clazz).each(function (_) {
+                    const aNode /* ViewNode */ = $(this)
+                        .removeClass(clazz)
+                        .data("node")
+                    const mapValue /* ViewNode | null */ = nodeMap.get(aNode.name)[index]
+                    if (mapValue != null && elementAccessor in mapValue) {
+                        mapValue[elementAccessor].addClass(clazz)
+                    }
+                })
+            }
+            migrateOneClassOnOneComponent(CLS_SELECTED, "vlist", "el")
+            migrateOneClassOnOneComponent(CLS_LAST_SELECTED, "vlist", "el")
+            migrateOneClassOnOneComponent(CLS_SELECTED, "border-box", "box")
+            migrateOneClassOnOneComponent(CLS_LAST_SELECTED, "border-box", "box")
+        }
+
+        function switchViewHierarchy(newIndex /* Integer */, oldIndex /* Integer */) {
+            function switchOneComponentsHtml(htmlContainer /* JQuery selector String */, rootJQueries /* JQuery[] */) {
+                rootJQueries[oldIndex] = $("<div>").append($(htmlContainer).children().detach())
+                rootJQueries[newIndex].children().appendTo(htmlContainer)
+            }
+            switchOneComponentsHtml("#vlist_content", vListJQueries)
+            switchOneComponentsHtml("#border-box", boxJQueries)
+        }
+
+        let previousIndex = 0
+
+        $(".tl-range")
+            .val("2")
+            .unbind("input change")
+            .on("input change", (jQueryEvent) => {
+
+                // Divide by 101 rather than 100 to avoid IndexOutOfBoundsException on right-most range selection
+                const index = Math.floor((jQueryEvent.target.value / 101) * vListJQueries.length)
+                if (previousIndex != index) {
+                    // Ordering of methods within 'if statement' matters for correct behavior
+                    migrateSelectedState(index)
+                    switchViewHierarchy(index, previousIndex)
+
+                    currentRootNode = rootNodes[index]
+                    showHiddenNodeOptionChanged()
+                    applyResizeData()
+
+                    previousIndex = index
+                }
+            })
+    }
+
+    function defaultOnBackButtonClicked() {
+        window.location.reload()
+    }
+
+    function setupCustomCommandButton(viewController) {
+        if (viewController.customCommand) {
+            $("#btn-custom-command").show();
+            loadSuggestions(viewController.device);
+        } else {
+            $("#btn-custom-command").hide();
+        }
+    }
+
+    function setupWindowTitle(appInfo) {
+        let title = appInfo.name.split(".");
+        title = title[title.length - 1];
+        $("#windowTitle").text(document.title = title + " [" + appInfo.name + "]")
+    }
+
+    function handleLoadingListError (msg) {
+        $("#hview").removeClass("hide").removeClass("hidden")
+        $("#vlist_content").showError(msg ? msg : "Error loading view hierarchy")
     }
 
     /********************************* Preview Grid resize *********************************/
@@ -650,6 +791,8 @@ $(function () {
         scrollToView(node.el, $("#vlist_content"));
     }
 
+    /* TODO: When selecting UX element, select the top-most element. Currently, clicking on anything 
+       within the border-box usually highlights the ScrimView as opposed to the actual target element. */
     $("#border-box").mouseover(function (e) {
         const offset = $(this).offset();
 
