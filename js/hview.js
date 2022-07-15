@@ -13,7 +13,7 @@
 // limitations under the License.
 
 let hViewAction;
-let multiHViewAction;
+let tlHvAction;
 
 $(function () {
     let currentAppInfo;
@@ -396,10 +396,12 @@ $(function () {
             }
         }
 
-        for (let i = 0; i < node.properties.length; i++) {
-            const p = node.properties[i];
-            if (favoriteProperties.indexOf(p.fullname) < 0) {
-                addProp(p, p.type);
+        if (node.properties != undefined) {
+            for (let i = 0; i < node.properties.length; i++) {
+                const p = node.properties[i];
+                if (favoriteProperties.indexOf(p.fullname) < 0) {
+                    addProp(p, p.type);
+                }
             }
         }
         filterProperties();
@@ -499,12 +501,12 @@ $(function () {
         $(this).parent().dblclick();
     }
 
-    const renderNode = function (node, container, boxContainer, maxW, maxH, leftShift, topshift, scaleX, scaleY) {
+    const renderNode = function (node, container, boxContainer, maxW, maxH, leftShift, topShift, scaleX, scaleY) {
         const newScaleX = scaleX * node.scaleX;
         const newScaleY = scaleY * node.scaleY;
 
-        const l = leftShift + (node.left + node.translateX) * scaleX + node.width * (scaleX - newScaleX) / 2;
-        const t = topshift + (node.top + node.translateY) * scaleY + node.height * (scaleY - newScaleY) / 2;
+        const l = leftShift + (node.left + node.translationX) * scaleX + node.width * (scaleX - newScaleX) / 2;
+        const t = topShift + (node.top + node.translationY) * scaleY + node.height * (scaleY - newScaleY) / 2;
         const boxPos = {
             left: l,
             top: t,
@@ -519,6 +521,8 @@ $(function () {
             height: (boxPos.height * 100 / maxH) + "%",
         }).appendTo(boxContainer).data("node", node);
 
+        if (node.name == undefined)
+            node.name = node.classname + "@" + node.id;
         let name = node.name.split(".");
         name = name[name.length - 1];
 
@@ -561,7 +565,7 @@ $(function () {
 
         // Clear all transform from the root, so that it matches the preview
         root.scaleX = root.scaleY = 1;
-        root.translateX = root.translateY = 1;
+        root.translationX = root.translationY = 1;
 
         renderNode(root, vListContent, boxContent, root.width, root.height, 0, 0, 1, 1);
         resizeBoxView();
@@ -582,7 +586,10 @@ $(function () {
         setupCustomCommandButton(viewController)
         setupWindowTitle(appInfo)
         currentAppInfo = appInfo;
+        setupBackButton(appInfo)
+    }
 
+    function setupBackButton(appInfo) {
         $("#btn-go-back")
             .show()
             .unbind("click")
@@ -595,7 +602,7 @@ $(function () {
                         .show();
                     appInfo.goBack();
                 } else {
-                    defaultOnBackButtonClicked()
+                    window.location.reload()
                 }
             })
     }
@@ -608,57 +615,43 @@ $(function () {
         $("#hview").removeClass("hide")
     }
 
-    multiHViewAction = function (jsZip) {
+    tlHvAction = function(appInfo) {
+        currentAppInfo = appInfo
+        viewController = new TimeLapseBugReportServiceController(appInfo)
+
         showViewHierarchyUX()
-        $("#btn-go-back").show().unbind("click").click(defaultOnBackButtonClicked)
-        $(".slider-group").toggleClass("visible hidden")
-        $("#vlist, #border-box").addClass("multi-page")
+        setupCustomCommandButton(viewController)
+        setupWindowTitle(currentAppInfo)
+        setupBackButton(appInfo)
+
+        if ($(".slider-group").hasClass("hidden")) {
+            $(".slider-group").toggleClass("visible hidden")
+            $("#vlist, #border-box").addClass("multi-page")
+        }
 
         const vListJQueries /* jQuery[] */  = []
         const boxJQueries /* jQuery[] */ = []
-        const rootNodes /* ViewNode[] */ = []
+        let rootNodes /* ViewNode[] */ = []
 
-        /* Pre-process all the view hierarchies into ready to use HTML that can be loaded into the 
-           web browser with low latency. Also immediately show the first parsed view hierarchy */
-        for(const [filename, file] of Object.entries(jsZip.files)) {
-            /* The JSZip.files property references subFolders and hidden folders in addition to
-               the desired child folders. These need to be filtered out during preprocessing.
-               Note: This filtering process might not be necessary depending on the format of real data. */
-            if (!(filename.startsWith("_")) && file.dir && !(filename.endsWith("img/"))) {
+        viewController.loadViewList().then(function(nodes) {
+            rootNodes = nodes
 
-                const subZip /* JSZip */ = jsZip.folder(filename)
-                const subConfig /* JSONObject or JSONArray */ = JSON.parse(subZip.file("config.json").asText())
-                currentAppInfo /* Object */ = { type: TYPE_ZIP, data: subZip, config: subConfig, name: subConfig.title }
+            for(let i = 0; i < rootNodes.length; i++) {
+                const tBox = $("<div>")
+                const tVList = $("<div>")
 
-                if (viewController == null) {
-                    viewController = createViewController(currentAppInfo)
+                renderList(rootNodes[i], tVList, tBox, vListJQueries.length)
+                vListJQueries.push(tVList)
+                boxJQueries.push(tBox)
 
-                    /* Some UI setup needs to wait to run until after the appInfo / view controller has been initialized. */
-                    setupCustomCommandButton(viewController)
-                    setupWindowTitle(currentAppInfo)
+                if ($("#vlist_content label").length == 0) {
+                    tVList.children().appendTo("#vlist_content")
+                    tBox.children().appendTo("#border-box")
+                    applyResizeData();
                 }
-
-                viewController.zip = subZip;
-                viewController.loadViewList().then(rootNode => {
-                    /* renderList attaches the html to the vList container and box container provided.
-                       By providing temporary holder containers, and then storing those after running
-                       renderList(), the UX can be preprocessed and stored for later use. */
-                    const tBox = $("<div>")
-                    const tVList = $("<div>")
-                    renderList(rootNode, tVList, tBox, vListJQueries.length)
-                    vListJQueries.push(tVList)
-                    boxJQueries.push(tBox)
-                    rootNodes.push(rootNode)
-
-                    /* If content isn't yet displayed, show the parsed content */
-                    if ($("#vlist_content label").length == 0) {
-                        tVList.children().appendTo("#vlist_content")
-                        tBox.children().appendTo("#border-box")
-                        applyResizeData();
-                    }
-                }).catch(msg => { handleLoadingListError(msg) });
             }
-        }
+            document.getElementById("tl-range").max = (rootNodes.length-1).toString()
+        })
 
         let nodeMap /* Map<String, ViewNode[]> \ null */
 
@@ -711,13 +704,11 @@ $(function () {
 
         let previousIndex = 0
 
-        $(".tl-range")
-            .val("2")
+        $("#tl-range")
+            .val("0")
             .unbind("input change")
             .on("input change", (jQueryEvent) => {
-
-                // Divide by 101 rather than 100 to avoid IndexOutOfBoundsException on right-most range selection
-                const index = Math.floor((jQueryEvent.target.value / 101) * vListJQueries.length)
+                const index = jQueryEvent.target.value
                 if (previousIndex != index) {
                     // Ordering of methods within 'if statement' matters for correct behavior
                     migrateSelectedState(index)
@@ -730,10 +721,6 @@ $(function () {
                     previousIndex = index
                 }
             })
-    }
-
-    function defaultOnBackButtonClicked() {
-        window.location.reload()
     }
 
     function setupCustomCommandButton(viewController) {
@@ -1321,7 +1308,7 @@ $(function () {
     /** ********************** Show/hide hidden nodes ********************** */
     // Hides the hode and all its children recursively.
     const hideNode = function (node, hide) {
-        hide = hide || !node.isVisible;
+        hide = hide || !(node.isVisible || node.visibility == VIEW_VISIBLE);
         if (hide) {
             node.box.hide();
             node.el.hide();

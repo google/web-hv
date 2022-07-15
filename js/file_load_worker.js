@@ -136,14 +136,23 @@ async function loadBugFile(bugFile, list) {
 
     let line;
     while ((line = liner.next()) != null) {
-        PARSING_DATA.forEach(p => {
-            if (p.header == line) {
-                const r = parseSectionList(p);
-                if (!parseData[p.key] || parseData[p.key].length < r.length) {
-                    parseData[p.key] = r;
+        if (VIEW_CAPTURE_REGEX.test(line)) {
+            list.push({
+                name: "Launcher's View Capture",
+                data: line,
+                type: TYPE_TIME_LAPSE_BUG_REPORT,
+                display: { }
+            })
+        } else {
+            PARSING_DATA.forEach(p => {
+                if (p.header == line) {
+                    const r = parseSectionList(p);
+                    if (!parseData[p.key] || parseData[p.key].length < r.length) {
+                        parseData[p.key] = r;
+                    }
                 }
-            }
-        })
+            })
+        }
     }
 
     if (parseData.windows) {
