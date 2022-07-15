@@ -340,6 +340,26 @@ class OfflineServiceController {
     }
 }
 
+class TimeLapseBugReportServiceController {
+    constructor(appInfo) {
+        this.bugReportLine = appInfo.data
+    }
+
+    loadViewList() {
+        const base64String = this.bugReportLine.replace(VIEW_CAPTURE_REGEX, "")
+
+        return protobuf.load("../protos/view_capture.proto").then(function (root) {
+            return root.lookupType("com.android.launcher3.view.ExportedData")
+                       .decode(base64ToUint8Array(base64String))
+                       .frameData
+                       .map(x => x.node)
+        })
+    }
+
+    async captureView(viewName) {
+        throw "Image not found";
+    }
+}
 
 class BugReportServiceController {
     constructor(appInfo) {
@@ -387,13 +407,7 @@ class BugReportServiceControllerLegacy extends BugReportServiceController {
     }
 
     loadViewList_(result) {
-        const binary_string = atob(this.data);
-        const len = binary_string.length;
-        const bytes = new Uint8Array( len );
-        for (let i = 0; i < len; i++)        {
-            const ascii = binary_string.charCodeAt(i);
-            bytes[i] = ascii;
-        }
+        const bytes = base64ToUint8Array(this.data)
         parseViewData(bytes, CMD_DEFLATE_STRING, result);
     }
 }

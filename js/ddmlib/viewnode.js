@@ -110,8 +110,8 @@ ViewNode.prototype.loadCommonProperties = function(map) {
     this.willNotDraw = this.getBoolean("willNotDraw", false);
 
     this.clipChildren = this.getBoolean("clipChildren", true);
-    this.translateX = this.getFloat("translationX", 0);
-    this.translateY = this.getFloat("translationY", 0);
+    this.translationX = this.getFloat("translationX", 0);
+    this.translationY = this.getFloat("translationY", 0);
     this.scaleX = this.getFloat("scaleX", 1);
     this.scaleY = this.getFloat("scaleY", 1);
 
