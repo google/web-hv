@@ -174,3 +174,14 @@ function scrollToView(child, parent) {
         parent.animate({scrollTop: parent.scrollTop() + delta}, 300);
     }
 }
+
+function base64ToUint8Array(base64String) {
+    const binary_string = atob(base64String);
+    const len = binary_string.length;
+    const bytes = new Uint8Array( len );
+    for (let i = 0; i < len; i++)        {
+        const ascii = binary_string.charCodeAt(i);
+        bytes[i] = ascii;
+    }
+    return bytes
+}

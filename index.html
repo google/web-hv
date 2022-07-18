@@ -34,6 +34,7 @@
     <script src="third_party/auto-complete.min.js"></script>
     <script src="third_party/jszip.min.js"></script>
     <script src="third_party/jmuxer.min.js"></script>
+    <script src="third_party/protobuf.min.js"></script>
 
     <script src="js/constants.js"></script>
     <script src="js/utils.js"></script>
@@ -92,7 +93,7 @@
                 </div>
 
                 <div class="slider-group hidden constituent" id="tl-range-container" style="position:absolute;left:0px;right:0px;bottom:0px;overflow:hidden;">
-                    <input type="range" class="tl-range slider-group hidden" style="margin:10px;padding:0px;position:absolute;bottom:0px;top:0px;right:0px;left:0px;">
+                    <input type="range" id="tl-range" class="slider-group hidden" style="margin:10px;padding:0px;position:absolute;bottom:0px;top:0px;right:0px;left:0px;" autofocus>
                 </div>
             </div>
             <div style="right:300px;width:10px;top:0;bottom:0;cursor:ew-resize" class="divider" control="pageX,right,width" id="main-contnt-divider"></div>
