@@ -1176,30 +1176,22 @@ $(function () {
                 icon: showHiddenNodes ? "ic_checked" : "ic_unchecked",
                 id: 0
             },
+            null,
             {
                 text: "Dark theme",
                 icon: isDarkTheme() ? "ic_checked" : "ic_unchecked",
                 id: 5
-            },
-            null,
-            {
-                text: "Save hierarchy",
-                icon: "ic_save",
-                id: 1
-            },
-            {
-                text: "Refresh",
-                icon: "ic_refresh",
-                id: 2
             }
         ];
+
         if (!$("#hviewtabs").is(":visible")) {
             // Only show the preview menu when tabs are not available
             menu.unshift({
                 text: "Preview",
                 icon: "ic_submenu",
                 id: 6
-            });
+            },
+            null);
         }
 
         if (viewController.loadScreenshot) {
@@ -1211,11 +1203,22 @@ $(function () {
         }
 
         if (adbDevice && !adbDevice.disconnectedDevice) {
-            menu.push(null, {
-                text: "Disconnect",
-                icon: "ic_disconnect",
-                id: 3
-            })
+            menu.push(null,
+                {
+                    text: "Save hierarchy",
+                    icon: "ic_save",
+                    id: 1
+                },
+                {
+                    text: "Refresh",
+                    icon: "ic_refresh",
+                    id: 2
+                },
+                {
+                    text: "Disconnect",
+                    icon: "ic_disconnect",
+                    id: 3
+                })
         }
 
         const offset = $(this).offset();
@@ -1258,30 +1261,22 @@ $(function () {
         {pageX: offset.left, pageY: offset.top});
     });
 
+    function buildPreviewMenuItem(id, text) {
+        return {
+            text: text,
+            icon: currentPreviewMode == id ? "ic_checked" : "ic_unchecked",
+            id: id
+        }
+    }
+
     let currentPreviewMode = 3;
     const showPreviewContext = function(e) {
-        const menu = [
-            {
-                text: "Grid",
-                icon: currentPreviewMode == 0 ? "ic_checked" : "ic_unchecked",
-                id: 0
-            },
-            {
-                text: "Image",
-                icon: currentPreviewMode == 1 ? "ic_checked" : "ic_unchecked",
-                id: 1
-            },
-            {
-                text: "Both",
-                icon: currentPreviewMode == 2 ? "ic_checked" : "ic_unchecked",
-                id: 2
-            },
-            {
-                text: "App",
-                icon: currentPreviewMode == 3 ? "ic_checked" : "ic_unchecked",
-                id: 3
-            }
-        ];
+        const menu = [ buildPreviewMenuItem(0, "Grid") ]
+        if (!viewController.hasNoImage) {
+            menu.push(null, buildPreviewMenuItem(1, "Image"), null, buildPreviewMenuItem(2, "Both"))
+        }
+        menu.push(null, buildPreviewMenuItem(3, "App"))
+
         showContext(menu, function () {
             switch (this.id) {
                 case 0:  // only grid

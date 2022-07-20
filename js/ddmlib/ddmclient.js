@@ -373,6 +373,7 @@ class BugReportServiceController {
                 this.density = display.density;
             }
         }
+        this.hasNoImage = true;
     }
 
     loadViewList_(result) {
