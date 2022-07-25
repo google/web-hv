@@ -28,6 +28,20 @@ $(function () {
 
     const closedSections = {};
 
+    /* When showing time lapse view hierarchies, cloning these prototypes to build
+       the UX rather than constructing them every time saves ~1.25ms per iteration. */
+    const divProtoType = document.createElement("div")
+    const xlinewrapProtoType = document.createElement("x-line-wrap")
+    const xprofileProtoType = document.createElement("x-profile")
+    const labelProtoType = document.createElement("label")
+    labelProtoType.classList.add(CLS_WITH_ARROW)
+    const spanProtoType = document.createElement("span")
+    const newContainerProtoType = divProtoType.cloneNode()
+    newContainerProtoType.classList.add(CLS_TREENODE)
+
+    const PROCESSING_MS = 10;
+    const FRAME_MS = 16;
+
     // Load favorite properties
     if (localStorage.favoriteProps) {
         try {
@@ -234,7 +248,7 @@ $(function () {
             }
         }).catch(() => {
             node.imageUrl = null;
-            if (node.box.hasClass(CLS_SELECTED)) {
+            if (node.box.classList.contains(CLS_SELECTED)) {
                 $("#image-preview").showError("Error loading image");
             }
         });
@@ -283,16 +297,20 @@ $(function () {
     }
 
     const selectNode = function () {
-        if ($(this).hasClass(CLS_SELECTED)) return;
-        $(".last_selected").removeClass(CLS_LAST_SELECTED);
-        $(".selected").removeClass(CLS_SELECTED).addClass(CLS_LAST_SELECTED);
-        $(this).addClass(CLS_SELECTED);
+        if (this.classList.contains(CLS_SELECTED)) return;
+        document.querySelectorAll(".last_selected").forEach((it) => {
+            it.classList.remove(CLS_LAST_SELECTED);
+        })
+        document.querySelectorAll(".selected").forEach((it) => {
+            it.classList.remove(CLS_SELECTED)
+            it.classList.add(CLS_LAST_SELECTED);
+        })
+        this.classList.add(CLS_SELECTED);
+        this.box.classList.add(CLS_SELECTED);
 
         $("#border-box .selected, #image-preview").css('background-image', 'none')
-        const box = $(this).data("box").addClass(CLS_SELECTED);
 
         // Render properties;
-        const node = $(this).data("node");
         const nHolder = $("#p_name").empty();
         const vHolder = $("#p_val").empty();
 
@@ -390,31 +408,31 @@ $(function () {
 
         // Selected properties
         for (let i = 0; i < favoriteProperties.length; i++) {
-            const prop = node.namedProperties[favoriteProperties[i]];
+            const prop = this.node.namedProperties[favoriteProperties[i]];
             if (prop) {
                 addProp(prop, "Favorites").addClass(CLS_SELECTED);
             }
         }
 
-        if (node.properties != undefined) {
-            for (let i = 0; i < node.properties.length; i++) {
-                const p = node.properties[i];
+        if (this.node.properties != undefined) {
+            for (let i = 0; i < this.node.properties.length; i++) {
+                const p = this.node.properties[i];
                 if (favoriteProperties.indexOf(p.fullname) < 0) {
                     addProp(p, p.type);
                 }
             }
         }
         filterProperties();
-        selectedNode = node;
+        selectedNode = this.node;
 
         // Apply image
-        if (node.imageUrl == URL_LOADING) {
+        if (this.node.imageUrl == URL_LOADING) {
             // Show a loading message
-        } else if (node.imageUrl) {
-            box.css('background-image', 'url("' + node.imageUrl + '")');
-            $("#image-preview").empty().css('background-image', 'url("' + node.imageUrl + '")');
+        } else if (this.node.imageUrl) {
+            box.css('background-image', 'url("' + this.node.imageUrl + '")');
+            $("#image-preview").empty().css('background-image', 'url("' + this.node.imageUrl + '")');
         } else {
-            loadImage(node);
+            loadImage(this.node);
         }
     }
 
@@ -426,18 +444,17 @@ $(function () {
 
     const profileInfoBox = $("#profile-info");
     const mouseOverNode = function () {
-        $(this).data("box").addClass(CLS_HOVER);
+        this.box.classList.add(CLS_HOVER)
 
-        const node = $(this).data("node");
-        if (node.profiled) {
-            profileInfoBox.find("#profile-info-m").text(node.measureTime.toFixed(5));
-            profileInfoBox.find("#profile-info-l").text(node.layoutTime.toFixed(5));
-            profileInfoBox.find("#profile-info-d").text(node.drawTime.toFixed(5));
+        if (this.node.profiled) {
+            profileInfoBox.find("#profile-info-m").text(this.node.measureTime.toFixed(5));
+            profileInfoBox.find("#profile-info-l").text(this.node.layoutTime.toFixed(5));
+            profileInfoBox.find("#profile-info-d").text(this.node.drawTime.toFixed(5));
             profileInfoBox.show();            
         }
     }
     const mouseOutNode = function () {
-        $(this).data("box").removeClass(CLS_HOVER);
+        this.box.classList.remove(CLS_HOVER)
         profileInfoBox.hide();
     }
 
@@ -445,18 +462,17 @@ $(function () {
         e.preventDefault();
         selectNode.call(this);
 
-        const node = $(this).data("node");
         const menu = [
             {
                 text: "Save PNG",
                 icon: "ic_save",
-                disabled: !(node.imageUrl && node.imageUrl != URL_LOADING),
+                disabled: !(this.node.imageUrl && this.node.imageUrl != URL_LOADING),
                 id: 0
             },
             {
                 text: "Reload PNG",
                 icon: "ic_refresh",
-                disabled: node.imageUrl == URL_LOADING,
+                disabled: this.node.imageUrl == URL_LOADING,
                 id: 1
             }
         ];
@@ -470,7 +486,7 @@ $(function () {
         }
         menu.push(null);
 
-        if (!node.disablePreview) {
+        if (!this.node.disablePreview) {
             menu.push({
                 text: "Disable preview",
                 icon: "ic_hide",
@@ -514,15 +530,16 @@ $(function () {
             height: node.height * newScaleY,
         };
 
-        const box = $("<div>").css({
-            left: (boxPos.left * 100 / maxW) + "%",
-            top: (boxPos.top * 100 / maxH) + "%",
-            width: (boxPos.width * 100 / maxW) + "%",
-            height: (boxPos.height * 100 / maxH) + "%",
-        }).appendTo(boxContainer).data("node", node);
+        const box = divProtoType.cloneNode()
+        box.style.left = (boxPos.left * 100 / maxW) + "%"
+        box.style.top = (boxPos.top * 100 / maxH) + "%"
+        box.style.width = (boxPos.width * 100 / maxW) + "%"
+        box.style.height = (boxPos.height * 100 / maxH) + "%"
+        boxContainer.appendChild(box)
+        box.node = node
 
         if (node.name == undefined)
-            node.name = node.classname + "@" + node.id;
+            node.name = node.classname
         let name = node.name.split(".");
         name = name[name.length - 1];
 
@@ -532,23 +549,34 @@ $(function () {
         }
         node.desc = name;
 
-        const elWrap = $("<x-line-wrap>").text(name).append($("<x-profile>"));
-        const el = $("<label>").appendTo(container).addClass(CLS_WITH_ARROW)
-            .data({
-                node: node,
-                box: box
-            })
-            .click(selectNode).hover(mouseOverNode, mouseOutNode).bind("contextmenu", showNodeContext)
-            .append(elWrap);
+        const elWrap = xlinewrapProtoType.cloneNode()
+        elWrap.appendChild(document.createTextNode(name))
+        elWrap.appendChild(xprofileProtoType.cloneNode())
+    
+        const el = labelProtoType.cloneNode()
+        container.appendChild(el)
+        el.onclick = selectNode
+        el.onmouseover = mouseOverNode
+        el.onmouseout = mouseOutNode
+        el.oncontextmenu = showNodeContext
+        el.appendChild(elWrap)
+        el.node = node
+        el.box = box
+        box.el = el
 
-        node.box = box;
-        node.el = el;
+        node.box = box
+        node.el = el
         node.boxpos = boxPos;
-        $("<span>").prependTo(elWrap).click(treeToggleFromArrow);
+
+        const span = spanProtoType.cloneNode()
+        elWrap.insertBefore(span, null)
+        span.onclick = treeToggleFromArrow
 
         if (node.children.length) {
-            el.addClass(CLS_EXPANDABLE).dblclick(treeToggle);
-            const newContainer = $("<div>").addClass(CLS_TREENODE).appendTo(container);
+            el.classList.add(CLS_EXPANDABLE)
+            el.ondblclick = treeToggle
+            const newContainer = newContainerProtoType.cloneNode()
+            container.appendChild(newContainer)
             const shiftX = l - node.scrollX;
             const shiftY = t - node.scrollY;
             for (let i = 0; i < node.children.length; i++) {
@@ -557,20 +585,16 @@ $(function () {
         }
     }
 
-    const renderList = function (root, vListContent = $("#vlist_content").empty(), boxContent = $("#border-box").empty()) {
-        $("#hview").removeClass("hide").removeClass("hidden");
-        $("#main-progress").hide();
-
-        currentRootNode = root;
+    const renderList = function (root, vListContent, boxContent) {
+        // Remove any existing child nodes from both containers
+        vListContent.replaceChildren();
+        boxContent.replaceChildren();
 
         // Clear all transform from the root, so that it matches the preview
         root.scaleX = root.scaleY = 1;
         root.translationX = root.translationY = 1;
 
-        renderNode(root, vListContent, boxContent, root.width, root.height, 0, 0, 1, 1);
-        resizeBoxView();
-        $("#vlist_content label").first().click();
-        showHiddenNodeOptionChanged();
+        renderNode(root, vListContent, boxContent, root.width, root.height, 0, 0, 1, 1)
     }
 
     /********************************* Refresh view *********************************/
@@ -579,8 +603,10 @@ $(function () {
 
         viewController = createViewController(appInfo);
         viewController.loadViewList().then(v => {
-            renderList(v);
-            applyResizeData();
+            currentRootNode = v;
+            renderList(v, document.getElementById("vlist_content"), document.getElementById("border-box"));
+            onFirstViewHierarchyRendered()
+            $("#main-progress").hide();    
         }).catch(msg => { handleLoadingListError(msg) });
 
         setupCustomCommandButton(viewController)
@@ -612,7 +638,14 @@ $(function () {
         $("#main-progress").show()
         $("#device-list-content").hide()
         $("#darkThemeSwitch").hide()
-        $("#hview").removeClass("hide")
+        $("#hview").removeClass("hide").removeClass("hidden");
+    }
+
+    function onFirstViewHierarchyRendered() {
+        resizeBoxView();
+        showHiddenNodeOptionChanged();    
+        applyResizeData();
+        $("#vlist_content label").first().click();
     }
 
     tlHvAction = function(appInfo) {
@@ -632,59 +665,79 @@ $(function () {
         const vListJQueries /* jQuery[] */  = []
         const boxJQueries /* jQuery[] */ = []
         let rootNodes /* ViewNode[] */ = []
+        let nodeMap /* Map<String, ViewNode[]> | null */ = new Map()
 
         viewController.loadViewList().then(function(nodes) {
             rootNodes = nodes
+            currentRootNode = rootNodes[0]
+            document.getElementById("tl-range").max = (rootNodes.length-1).toString()
 
-            for(let i = 0; i < rootNodes.length; i++) {
-                const tBox = $("<div>")
-                const tVList = $("<div>")
+            function addToNodeMap(node /* ViewNode */, rootNodeIndex /* Integer */) {
+                let mapValue /* ViewNode[] | null */ = nodeMap.get(node.name)
+                if (mapValue == null) {
+                    mapValue = Array(rootNodes.length)
+                    nodeMap.set(node.name, mapValue)
+                }
+                mapValue[rootNodeIndex] = node
+                for (let i = 0; i < node.children.length; i++) {
+                    addToNodeMap(node.children[i], rootNodeIndex)
+                }
+            }
 
-                renderList(rootNodes[i], tVList, tBox, vListJQueries.length)
+            let processingStartTime;
+
+            /* processRootNodes processes as many root nodes as it can within ~10ms. Then it pauses for a
+               few milliseconds before hogging the main thread again so that the user can interact with a
+               working and non-janky UI while the entire collection of time lapse data is being processed.
+
+               If you are wondering why web workers were not used instead, that is because they do not 
+               work well for this use case due to the following: 1) JQuery/DOM manipulation needs a DOM in
+               order to work properly. I tried using a fake DOM, and JQuery's append/after/before methods
+               didn't work. 2) Functions cannot be passed to and from WebWorkers, so the hover / click / etc.
+               methods can't be prepared off the main thread. Also, aside from WebWorkers, Javascript in the
+               browser doesn't provide any alternative methods of multi-threaded programming. */
+            function processRootNodes(processedIndex /* Integer */, isNewRoundOfProcessing /* Boolean */) {
+                if (isNewRoundOfProcessing) {
+                    processingStartTime = Date.now()
+                }
+
+                const tBox = divProtoType.cloneNode()
+                const tVList = divProtoType.cloneNode()
+
+                renderList(rootNodes[processedIndex], tVList, tBox)
                 vListJQueries.push(tVList)
                 boxJQueries.push(tBox)
+                addToNodeMap(rootNodes[processedIndex], processedIndex)
 
-                if ($("#vlist_content label").length == 0) {
-                    tVList.children().appendTo("#vlist_content")
-                    tBox.children().appendTo("#border-box")
-                    applyResizeData();
+                if (processedIndex == 0) {
+                    document.getElementById("vlist_content").replaceChildren(...tVList.childNodes)
+                    document.getElementById("border-box").replaceChildren(...tBox.childNodes)
+                    onFirstViewHierarchyRendered()
+                }
+
+                if (processedIndex < rootNodes.length-1) {
+                    if ((Date.now() - processingStartTime) < PROCESSING_MS) {
+                        processRootNodes(processedIndex+1, false)
+                    } else {
+                        setTimeout(
+                            processRootNodes,
+                            Math.max(FRAME_MS + processingStartTime - Date.now(), 1),
+                            processedIndex+1,
+                            true)
+                    }
+                } else {
+                    $("#main-progress").hide();    
                 }
             }
-            document.getElementById("tl-range").max = (rootNodes.length-1).toString()
+            processRootNodes(0, true);
         })
 
-        let nodeMap /* Map<String, ViewNode[]> \ null */
-
         function migrateSelectedState(index /* Integer */) {
-            if (nodeMap == null) {
-                nodeMap = new Map()
-                function constructNodeMap(nodes /* ViewNode[] */, rootNodeIndex /* Integer | null */ = null) {
-                    const noRootNodeIndexProvided = rootNodeIndex == null
-                    for (let i = 0; i < nodes.length; i++) {
-                        if (noRootNodeIndexProvided) {
-                            rootNodeIndex = i
-                        }
-                        let mapValue /* ViewNode[] | null */ = nodeMap.get(nodes[i].name)
-                        if (mapValue == null) {
-                            mapValue = Array(rootNodes.length)
-                            nodeMap.set(nodes[i].name, mapValue)
-                        }
-                        mapValue[rootNodeIndex] = nodes[i]
-                        constructNodeMap(nodes[i].children, rootNodeIndex)
-                    }
-                }
-                constructNodeMap(rootNodes)
-            }
-
             function migrateOneClassOnOneComponent(clazz /* String */, containerId /* String */, elementAccessor /* String */) {
                 $("#" + containerId + " ." + clazz).each(function (_) {
-                    const aNode /* ViewNode */ = $(this)
-                        .removeClass(clazz)
-                        .data("node")
-                    const mapValue /* ViewNode | null */ = nodeMap.get(aNode.name)[index]
-                    if (mapValue != null && elementAccessor in mapValue) {
-                        mapValue[elementAccessor].addClass(clazz)
-                    }
+                    this.classList.remove(clazz)
+                    const mapValue /* ViewNode | null */ = nodeMap.get(this.node.name)[index]
+                    mapValue[elementAccessor].classList.add(clazz)
                 })
             }
             migrateOneClassOnOneComponent(CLS_SELECTED, "vlist", "el")
@@ -694,12 +747,14 @@ $(function () {
         }
 
         function switchViewHierarchy(newIndex /* Integer */, oldIndex /* Integer */) {
-            function switchOneComponentsHtml(htmlContainer /* JQuery selector String */, rootJQueries /* JQuery[] */) {
-                rootJQueries[oldIndex] = $("<div>").append($(htmlContainer).children().detach())
-                rootJQueries[newIndex].children().appendTo(htmlContainer)
-            }
-            switchOneComponentsHtml("#vlist_content", vListJQueries)
-            switchOneComponentsHtml("#border-box", boxJQueries)
+            const vListContent = document.getElementById("vlist_content")
+            const borderBox = document.getElementById("border-box")
+
+            vListJQueries[oldIndex].replaceChildren(...vListContent.childNodes)
+            vListContent.replaceChildren(...vListJQueries[newIndex].childNodes)
+
+            boxJQueries[oldIndex].replaceChildren(...borderBox.childNodes)
+            borderBox.replaceChildren(...boxJQueries[newIndex].childNodes)
         }
 
         let previousIndex = 0
@@ -708,7 +763,9 @@ $(function () {
             .val("0")
             .unbind("input change")
             .on("input change", (jQueryEvent) => {
-                const index = jQueryEvent.target.value
+                /* vListJQueries.length - 1 represents the number of root nodes that have already been processed
+                   and are available to be shown as a view hierarchy to the user. */
+                const index = Math.min(jQueryEvent.target.value, vListJQueries.length - 1)
                 if (previousIndex != index) {
                     // Ordering of methods within 'if statement' matters for correct behavior
                     migrateSelectedState(index)
@@ -716,9 +773,9 @@ $(function () {
 
                     currentRootNode = rootNodes[index]
                     showHiddenNodeOptionChanged()
-                    applyResizeData()
 
                     previousIndex = index
+                    $("#tl-range").val(index)
                 }
             })
     }
@@ -834,7 +891,10 @@ $(function () {
             return null;
         }
 
-        let lastMatch = $("#border-box div.hover").data("node");
+        let lastMatch = document.querySelector("#border-box div.hover")
+        if (lastMatch) {
+            lastMatch = lastMatch.node
+        }
         const findBox = function (e) {
             const x = (e.pageX - offset.left) * widthFactor;
             const y = (e.pageY - offset.top) * heightFactor;
@@ -1032,7 +1092,7 @@ $(function () {
             const nodes = boxes.filter(function() {
                 return $(this).css("display") != "none";
             }).map(function () {
-                return $(this).data("node").el.get(0);
+                return this.node.el.get(0);
             });
 
             let st = nodes.index(selectedNode.el);
@@ -1306,12 +1366,12 @@ $(function () {
     $("#sshot-tab").bind("contextmenu", showPreviewContext);
 
     /** ********************** Show/hide hidden nodes ********************** */
-    // Hides the hode and all its children recursively.
+    // Hides the node and all its children recursively.
     const hideNode = function (node, hide) {
         hide = hide || !(node.isVisible || node.visibility == VIEW_VISIBLE);
         if (hide) {
-            node.box.hide();
-            node.el.hide();
+            node.box.style.display = "none"
+            node.el.style.display = "none"
         }
         if (node.children.length) {
             for (let i = 0; i < node.children.length; i++) {

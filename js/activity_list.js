@@ -33,7 +33,6 @@ const activityListAction = function (initializer) {
         };
 
         if (info.type == TYPE_TIME_LAPSE_BUG_REPORT) {
-            toast("Loading time lapse data. This can take longer than 10 seconds.")
             tlHvAction(info)
         } else {
             hViewAction(info);
