@@ -196,3 +196,11 @@ function switchTheme() {
 function isDarkTheme() {
 	return localStorage.isDarkTheme == "true";
 }
+
+/**
+ * Adds a node displaying the error message in the container
+ */
+$.fn.showError = function(msg) {
+  $("#main-progress").hide();
+  return this.empty().removeClass("hide").removeClass("hidden").append($("<span>").text(msg).addClass("error"));
+}

@@ -41,9 +41,5 @@ const CMD_USE_PROPERTY_MAP = 4;
 const CMD_DEFLATE_STRING = 8;
 const CMD_SKIP_8_BITS = 16;
 
-/* Temporary value to enable development with mock data
-   until a better way can be implemented using real data. */
-const MULTI_ZIP_CONFIG_VERSION = 22;
-
 const VIEW_VISIBLE = 0;
 const VIEW_CAPTURE_REGEX = /^\s*mViewCapture:\s*/

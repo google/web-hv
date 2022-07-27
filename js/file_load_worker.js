@@ -14,6 +14,7 @@
 
 importScripts("../third_party/jszip.min.js");
 importScripts("constants.js");
+importScripts("utils.js")
 
 self.onmessage = function(e) {
     const reader = new FileReader();
@@ -60,9 +61,7 @@ async function handleLoadFile(reader) {
     const config = JSON.parse(zip.file("config.json").asText());
     const appInfo = { type: TYPE_ZIP, data: reader.result, config: config, name: config.title };
 
-    if (config.version == MULTI_ZIP_CONFIG_VERSION) {
-        appInfo.type = TYPE_MULTI_FILE_ZIP;
-    } else if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
+    if (config.version != 1 || !config.title || zip.file("hierarchy.txt") == null) {
         throw "Missing data"
     }
 
@@ -137,9 +136,12 @@ async function loadBugFile(bugFile, list) {
     let line;
     while ((line = liner.next()) != null) {
         if (VIEW_CAPTURE_REGEX.test(line)) {
+            const tlHvDataAsBase64String = line.replace(VIEW_CAPTURE_REGEX, "")
+            const tlHvDataAsBinaryArray = base64ToUint8Array(tlHvDataAsBase64String)
+
             list.push({
                 name: "Launcher's View Capture",
-                data: line,
+                data: tlHvDataAsBinaryArray,
                 type: TYPE_TIME_LAPSE_BUG_REPORT,
                 display: { }
             })
