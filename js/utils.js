@@ -82,14 +82,6 @@ async function saveFile(fileName, url) {
     }, 0);
 }
 
-/**
- * Adds a node displaying the error message in the continer
- */
-$.fn.showError = function(msg) {
-  $("#main-progress").hide();
-  return this.empty().removeClass("hide").removeClass("hidden").append($("<span>").text(msg).addClass("error"));
-}
-
 function showContext(menu, callback, e) {
     const elementFactory = function(el, hideMenu) {
         const menuClickHandler = function() {

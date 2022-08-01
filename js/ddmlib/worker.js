@@ -13,6 +13,7 @@
 // limitations under the License.
 
 importScripts("viewnode.js");
+importScripts("property_formatter.js");
 
 const CMD_CONVERT_TO_STRING = 1;
 const CMD_PARSE_OLD_DATA = 2;
@@ -80,8 +81,10 @@ self.onmessage = function(e) {
     }
 
     const rootNode = parseNode(data, bitShift);
+    formatProperties(rootNode);
+
     postMessage({
-        root: rootNode
+        viewHierarchyData: rootNode
     });
     close();
 }
