@@ -1123,14 +1123,11 @@ $(function () {
 
             // Search through boxes, as nodes might be collapsed.
             const boxes = $("#border-box div");
-            const nodes = boxes.filter(function() {
-                return $(this).css("display") != "none";
-            }).map(function () {
-                return this.node.el.get(0);
-            });
+            const elList = boxes.filter((_, element) => element.style.display != "none")
+                                .map((_, element) => element.node.el)
 
-            let st = nodes.index(selectedNode.el);
-            const count = nodes.length;
+            let st = elList.index(selectedNode.el);
+            const count = elList.length;
 
             for (let i = -1; i < count; i++) {
                 st += dir;
@@ -1140,9 +1137,9 @@ $(function () {
                 if (st >= count) {
                     st = 0;
                 }
-                if ($(nodes.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
+                if ($(elList.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
                     // Found element.
-                    selectNode.call(nodes.get(st));
+                    selectNode.call(elList.get(st));
                     scrollToNode(selectedNode);
                     return;
                 }
