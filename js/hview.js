@@ -39,9 +39,8 @@ $(function () {
     const spanProtoType = document.createElement("span")
     const newContainerProtoType = divProtoType.cloneNode()
     newContainerProtoType.classList.add(CLS_TREENODE)
-
-    const PROCESSING_MS = 10;
-    const FRAME_MS = 16;
+    const selectProtoType = document.createElement("select")
+    const optionProtoType = document.createElement("option")
 
     // Load favorite properties
     if (localStorage.favoriteProps) {
@@ -188,8 +187,8 @@ $(function () {
             $(".pcontainer label").show();
             sections.each(function () {
                 total++;
-                const left = $(this).data("lbox").children();
-                if (!$(this).hasClass(CLS_CLOSED)) {
+                const left = this.lbox.children;
+                if (!this.classList.contains(CLS_CLOSED)) {
                     total += left.length;
                 }
                 for (let i = 0; i < left.length; i++) {
@@ -202,8 +201,8 @@ $(function () {
             const re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
             sections.each(function () {
                 let found = 0;
-                const left = $(this).data("lbox").children();
-                const right = $(this).data("rbox").children();
+                const left = this.lbox.children;
+                const right = this.rbox.children;
                 for (let i = 0; i < left.length; i++) {
                     const child = $(left[i]).children().eq(1);
                     const itemText = child.text();
@@ -218,13 +217,16 @@ $(function () {
                     }
                 }
                 if (found > 0) {
-                    $(this).show().data("valspace").show();
+                    this.style.display = "inline-block"
+                    this.valspace.style.display = "inline-block"
+
                     total++;
-                    if (!$(this).hasClass(CLS_CLOSED)) {
+                    if (!this.classList.contains(CLS_CLOSED)) {
                         total += found;
                     }
                 } else {
-                    $(this).hide().data("valspace").hide();
+                    this.style.display = "none"
+                    this.valspace.style.display = "none"
                 }
             });
         }
@@ -268,15 +270,13 @@ $(function () {
     }
 
     const propertySectionToggle = function (e) {
-        const me = $(this).toggleClass(CLS_CLOSED);
-        const left = me.data("lbox");
-        const right = me.data("rbox");
-        if (closedSections[me.text()] = me.hasClass(CLS_CLOSED)) {
-            left.slideUp("fast");
-            right.slideUp("fast");
+        this.classList.toggle(CLS_CLOSED)
+        if (closedSections[$(this).text()] = this.classList.contains(CLS_CLOSED)) {
+            $(this.lbox).slideUp("fast")
+            $(this.rbox).slideUp("fast")
         } else {
-            left.slideDown("fast");
-            right.slideDown("fast");
+            $(this.lbox).slideDown("fast")
+            $(this.rbox).slideDown("fast")
         }
         filterProperties();
     }
@@ -326,55 +326,81 @@ $(function () {
         }
     }
 
-    function renderProperties(node /* ViewNode */, nHolder = $("#p_name").empty(), vHolder = $("#p_val").empty()) {
+    function renderProperties(node /* ViewNode */) {
+        const nameContainer = document.getElementById("p_name")
+        nameContainer.replaceChildren()
+
+        const valContainer = document.getElementById("p_val")
+        valContainer.replaceChildren()
+
         let lastType = "";
-        let nSubHolder = nHolder;
-        let vSubHolder = vHolder;
+        let nameSubContainer = nameContainer
+        let valSubContainer = valContainer
 
         const addProp = function (p, type) {
             if (type != lastType) {
                 lastType = type;
 
-                // Add section
-                const section = $("<label>").addClass(CLS_EXPANDABLE).addClass(CLS_WITH_ARROW).text(type).appendTo(nHolder).prepend("<span>");
-                const valspace = $("<label>").html("&nbsp;").appendTo(vHolder);
+                const typeSection = labelProtoType.cloneNode()
+                typeSection.classList.add(CLS_EXPANDABLE, CLS_WITH_ARROW)
+                typeSection.appendChild(document.createTextNode(type))
+                nameContainer.appendChild(typeSection)
+                typeSection.insertBefore(spanProtoType.cloneNode(), null)
 
-                nSubHolder = $("<div>").appendTo(nHolder);
-                vSubHolder = $("<div>").appendTo(vHolder);
-                section.data({
-                    lbox: nSubHolder,
-                    rbox: vSubHolder,
-                    valspace: valspace
-                }).click(propertySectionToggle);
+                const valSpace = labelProtoType.cloneNode()
+                valSpace.innerHTML = "&nbsp;"
+                valContainer.appendChild(valSpace)
+
+                nameSubContainer = divProtoType.cloneNode()
+                nameContainer.appendChild(nameSubContainer)
+                valSubContainer = divProtoType.cloneNode()
+                valContainer.appendChild(valSubContainer)
+
+                typeSection.lbox = nameSubContainer
+                typeSection.rbox = valSubContainer
+                typeSection.valspace = valSpace
+                typeSection.onclick = propertySectionToggle
 
                 if (closedSections[type]) {
-                    nSubHolder.hide();
-                    vSubHolder.hide();
-                    section.addClass(CLS_CLOSED);
+                    nameSubContainer.style.display = "none"
+                    valSubContainer.style.display = "none"
+                    typeSection.classList.add(CLS_CLOSED)
                 }
             }
 
-            const pName = $("<label>").append($("<span />").text(p.name)).appendTo(nSubHolder);
-            const value = "" + p.value;
+            const nameLabel = labelProtoType.cloneNode()
+            nameLabel.appendChild(spanProtoType.cloneNode())
+            nameLabel.appendChild(document.createTextNode(p.name))
+            nameSubContainer.appendChild(nameLabel)
 
-            const labelTag = $("<label>");
+            const value = "" + p.value;
+            const labelTag = labelProtoType.cloneNode()
 
             if (value == "") {
-                labelTag.html("&nbsp;");
+                labelTag.innerHTML = "&nbsp;"
             } else {
                 const valueF = parseFloat(p.value);
                 const valueI = parseInt(p.value);
-                let colorWell = undefined;
+                let colorWellDiv = undefined;
 
                 if (!isNaN(valueF)) {
                     // Numbers could mean any number (sorry) of things, so let's try to show 
                     // some relevant interpretations, switchable via <option> drop-down.
-                    const selectTag = $(`<select name="${p.name}">`).append($("<option value='default'>").text(value));
+                    const selectTag = selectProtoType.cloneNode()
+                    selectTag.name = p.name
+                    const optionTag = optionProtoType.cloneNode()
+                    optionTag.value = 'default'
+                    optionTag.innerHTML = value
+                    selectTag.appendChild(optionTag)
+
                     if (viewController.density > 0) {
                         const dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
                         if (Math.abs(dp) < 10000) {
                             // probably a reasonable dimension
-                            selectTag.append($("<option value='size-dp'>").text(dp + " dp"));
+                            const sizeDpOption = optionProtoType.cloneNode()
+                            sizeDpOption.value = 'size-dp'
+                            sizeDpOption.innerHTML = dp + " dp"
+                            selectTag.appendChild(sizeDpOption)
                         }
                     }
                     if (valueF == valueI) {
@@ -382,41 +408,57 @@ $(function () {
                         let valueHex = "";
                         if (p.name.search(/color$/i) >= 0) {
                             valueHex = toHex(valueU, 8);
-                            selectTag.append(
-                                $("<option value='color-hex'>").text("#" + valueHex)
-                            );
+                            const colorHexOption = optionProtoType.cloneNode()
+                            colorHexOption.value = 'color-hex'
+                            colorHexOption.innerHTML = "#" + valueHex
+                            selectTag.appendChild(colorHexOption)
                         } else {
                             valueHex = toHex(valueU);
-                            selectTag.append($("<option value='falgs-hex'>").text("0x" + valueHex));
+                            const falgsHexOption = optionProtoType.cloneNode()
+                            falgsHexOption.value = 'falgs-hex'
+                            falgsHexOption.innerHTML = "0x" + valueHex
+                            selectTag.appendChild(falgsHexOption)
                         }
                         if (valueHex) {
-                            colorWell = $("<div>").addClass(CLS_COLORWELL);
-                            selectTag.change(() => {
+                            colorWellDiv = divProtoType.cloneNode()
+                            colorWellDiv.classList.add(CLS_COLORWELL)
+
+                            selectTag.onchange = () => {
                                 const myVal = "" + selectTag.val();
                                 if (myVal.startsWith("#")) {
                                     const webColor = '#' + toHex(argb2rgba(valueU), 8);
-                                    colorWell.css('display', 'inline-block').css('background-color', webColor);
+                                    colorWellDiv.style.display = 'inline-block'
+                                    colorWellDiv.style.backgroundColor = webColor
                                 } else {
-                                    colorWell.hide();
+                                    colorWellDiv.style.display = "none"
                                 }
-                            })
+                            }
                         }
                         const valuePref = valueTypeMap[p.name];
-                        if (valuePref != undefined && selectTag.children().map(function() { return this.value; }).get().indexOf(valuePref) >= 0) {
-                            selectTag.val(valuePref);
+                        if (valuePref != undefined) {
+                            const valueArray = Array.from(selectTag.children, function() { return this.value; })
+                            if (valueArray.indexOf(valuePref) >= 0) {
+                                selectTag.val(valuePref);
+                            }
                         }
-                        selectTag.change(saveValueTypeSelect);
+                        selectTag.onchange = saveValueTypeSelect;
                     }
-                    labelTag.addClass(CLS_MULTI_TOGGLE).append(selectTag);
-                    if (colorWell) labelTag.append(colorWell);
+                    labelTag.classList.add(CLS_MULTI_TOGGLE)
+                    labelTag.appendChild(selectTag);
+                    if (colorWellDiv) labelTag.appendChild(colorWellDiv);
                 } else {
-                    labelTag.text(value);
+                    labelTag.appendChild(document.createTextNode(value))
                 }
             }
 
-            labelTag.appendTo(vSubHolder);
+            valSubContainer.appendChild(labelTag)
 
-            return $("<span>").addClass("star").data("pname", p.fullname).prependTo(pName).click(toggleFavorite);
+            const starSpan = spanProtoType.cloneNode()
+            starSpan.classList.add("star")
+            starSpan.pName = p.fullname
+            nameLabel.insertBefore(starSpan, null)
+            starSpan.onclick = toggleFavorite
+            return starSpan
         }
 
         // Selected properties
@@ -711,19 +753,47 @@ $(function () {
         }
         w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
 
+        function hasDifferentProperties(node /* ViewNode!! */, other /* ViewNode!! */) {
+            return node.id != other.id
+                || node.left != other.left
+                || node.top != other.top
+                || node.width != other.width
+                || node.height != other.height
+                || node.translationX != other.translationX
+                || node.translationY != other.translationY
+                || node.scaleX != other.scaleX
+                || node.scaleY != other.scaleY
+                || node.alpha != other.alpha
+                || node.willNotDraw != other.willNotDraw
+                || node.clipChildren != other.clipChildren
+                || node.visibility != other.visibility
+                || node.scrollX != other.scrollX
+                || node.scrollY != other.scrollY
+        }
+
         function migrateSelectedState(index /* Integer */) {
-            function toggle(node, clazz) {
-                ["el", "box"].forEach((it) => node[it].classList.toggle(clazz))
+            function migrateOne(node /* ViewNode? */, clazz /* String */) {
+                if (node == null) return
+
+                function toggle() {
+                    if (node == null) return
+                    ["el", "box"].forEach((it) => node[it].classList.toggle(clazz))
+                }
+
+                toggle()
+                node = nodeMap.get(node.name)[index]
+                toggle()
+                return node
             }
-            toggle(selectedNode, CLS_SELECTED)
-            toggle(lastSelectedNode, CLS_LAST_SELECTED)
 
-            selectedNode = nodeMap.get(selectedNode.name)[index]
-            renderProperties(selectedNode)
-            lastSelectedNode = nodeMap.get(lastSelectedNode.name)[index]
+            const lastFramesSelectedNode = selectedNode
+            selectedNode = migrateOne(selectedNode, CLS_SELECTED)
 
-            toggle(selectedNode, CLS_SELECTED)
-            toggle(lastSelectedNode, CLS_LAST_SELECTED)
+            if (selectedNode != null && hasDifferentProperties(lastFramesSelectedNode, selectedNode)) {
+                renderProperties(selectedNode)
+            }
+
+            lastSelectedNode = migrateOne(lastSelectedNode, CLS_LAST_SELECTED)
         }
 
         function switchViewHierarchy(newIndex /* Integer */, oldIndex /* Integer */) {
@@ -798,8 +868,8 @@ $(function () {
         // expand nodes recursively
         let parent = node.parent;
         while (parent) {
-            if (parent.el.hasClass(CLS_EXPANDABLE) && parent.el.hasClass(CLS_CLOSED)) {
-                parent.el.removeClass(CLS_CLOSED).next().show();
+            if (parent.el.classList.contains(CLS_EXPANDABLE) && parent.el.classList.contains(CLS_CLOSED)) {
+                $(parent.el).removeClass(CLS_CLOSED).next().show();
             }
             parent = parent.parent;
         }
@@ -876,13 +946,13 @@ $(function () {
             const found = findBox(e);
             if (found != lastMatch) {
                 if (lastMatch) {
-                    lastMatch.el.removeClass(CLS_HOVER);
-                    lastMatch.box.removeClass(CLS_HOVER);
+                    lastMatch.el.classList.remove(CLS_HOVER);
+                    lastMatch.box.classList.remove(CLS_HOVER);
                 }
 
                 if (found) {
-                    found.el.addClass(CLS_HOVER);
-                    found.box.addClass(CLS_HOVER);
+                    found.el.classList.add(CLS_HOVER);
+                    found.box.classList.add(CLS_HOVER);
                 }
                 lastMatch = found;
             }
@@ -908,8 +978,8 @@ $(function () {
 
     /** ********************** Context menu ********************** */
     const collapseAll = function (node) {
-        if (node.el.hasClass(CLS_EXPANDABLE)) {
-            node.el.addClass(CLS_CLOSED).next().hide();
+        if (node.el.classList.contains(CLS_EXPANDABLE)) {
+            $(node.el).addClass(CLS_CLOSED).next().hide();
             for (let i = 0; i < node.children.length; i++) {
                 collapseAll(node.children[i]);
             }
@@ -929,11 +999,11 @@ $(function () {
                 break;
             case 3: // Disable preview
                 selectedNode.disablePreview = true;
-                selectedNode.el.addClass("preview-disabled");
+                selectedNode.el.classList.add("preview-disabled");
                 break;
             case 4: // Enable preview
                 selectedNode.disablePreview = false;
-                selectedNode.el.removeClass("preview-disabled");
+                selectedNode.el.classList.remove("preview-disabled");
                 break;
             case 5: // Collapse all
                 collapseAll(selectedNode);
