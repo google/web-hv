@@ -643,6 +643,8 @@ $(function () {
                     $("#device-list-content")
                         .empty()
                         .show();
+                    $(".slider-group").addClass("hidden").removeClass("visible")
+                    $("#vlist, #border-box").removeClass("multi-page")
                     appInfo.goBack();
                 } else {
                     window.location.reload()
@@ -674,11 +676,8 @@ $(function () {
         $("#btn-custom-command").hide();
         setupWindowTitle(currentAppInfo)
         setupBackButton(appInfo)
-
-        if ($(".slider-group").hasClass("hidden")) {
-            $(".slider-group").toggleClass("visible hidden")
-            $("#vlist, #border-box").addClass("multi-page")
-        }
+        $(".slider-group").removeClass("hidden").addClass("visible")
+        $("#vlist, #border-box").addClass("multi-page")
 
         function addToNodeMap(node /* ViewNode */, rootNodeIndex /* Integer */) {
             let mapValue /* ViewNode[] | null */ = nodeMap.get(node.name)
