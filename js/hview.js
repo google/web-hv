@@ -245,11 +245,11 @@ $(function () {
             if (node == currentRootNode) {
                 $("#border-box").css('background-image', 'url("' + node.imageUrl + '")');
             }
-            if (node.box.hasClass(CLS_SELECTED)) {
-                node.box.css('background-image', 'url("' + node.imageUrl + '")');
+            if (node.box.classList.contains(CLS_SELECTED)) {
+                node.box.style.backgroundImage = 'url("' + node.imageUrl + '")'
                 $("#image-preview").empty().css('background-image', 'url("' + node.imageUrl + '")');
             }
-        }).catch(() => {
+        }).catch((e) => {
             node.imageUrl = null;
             if (node.box.classList.contains(CLS_SELECTED)) {
                 $("#image-preview").showError("Error loading image");
@@ -319,7 +319,7 @@ $(function () {
         if (this.node.imageUrl == URL_LOADING) {
             // Show a loading message
         } else if (this.node.imageUrl) {
-            box.css('background-image', 'url("' + this.node.imageUrl + '")');
+            this.box.style.backgroundImage = 'url("' + this.node.imageUrl + '")'
             $("#image-preview").empty().css('background-image', 'url("' + this.node.imageUrl + '")');
         } else {
             loadImage(this.node);
@@ -573,7 +573,7 @@ $(function () {
 
         const elWrap = xlinewrapProtoType.cloneNode()
         elWrap.appendChild(span)
-        elWrap.appendChild(document.createTextNode(node.name))
+        elWrap.appendChild(document.createTextNode(node.simpleName))
         elWrap.appendChild(xprofileProtoType.cloneNode())
     
         const el = labelProtoType.cloneNode()
