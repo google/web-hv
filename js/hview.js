@@ -568,7 +568,11 @@ $(function () {
         box.node = node
         boxContainer.appendChild(box)
 
+        const span = spanProtoType.cloneNode()
+        span.onclick = treeToggleFromArrow
+
         const elWrap = xlinewrapProtoType.cloneNode()
+        elWrap.appendChild(span)
         elWrap.appendChild(document.createTextNode(node.name))
         elWrap.appendChild(xprofileProtoType.cloneNode())
     
@@ -586,10 +590,6 @@ $(function () {
 
         node.box = box
         node.el = el
-
-        const span = spanProtoType.cloneNode()
-        elWrap.insertBefore(span, null)
-        span.onclick = treeToggleFromArrow
 
         if (node.children.length) {
             el.classList.add(CLS_EXPANDABLE)
@@ -873,7 +873,7 @@ $(function () {
             }
             parent = parent.parent;
         }
-        scrollToView(node.el, $("#vlist_content"));
+        scrollToView($(node.el), $("#vlist_content"));
     }
 
     /* TODO: When selecting UX element, select the top-most element. Currently, clicking on anything 
@@ -886,24 +886,17 @@ $(function () {
         const heightFactor = currentRootNode.height / $(this).height();
 
         const updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
-            if (node.disablePreview) {
-                return null;
-            }
-            if (!node.nodeDrawn) {
-                return null;
-            }
-            if (nodesHidden && !node.isVisible) {
+            if (node.disablePreview || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
                 return null;
             }
 
             const wasFirstNoDrawChildNull = firstNoDrawChild[0] == null;
-            const boxpos = node.boxpos;
 
-            const boxRight = boxpos.width + boxpos.left;
-            const boxBottom = boxpos.top + boxpos.height;
+            const boxRight = node.boxPos.width + node.boxPos.left;
+            const boxBottom = node.boxPos.top + node.boxPos.height;
             if (node.clipChildren) {
-                clipX1 = Math.max(clipX1, boxpos.left);
-                clipY1 = Math.max(clipY1, boxpos.top);
+                clipX1 = Math.max(clipX1, node.boxPos.left);
+                clipY1 = Math.max(clipY1, node.boxPos.top);
                 clipX2 = Math.min(clipX2, boxRight);
                 clipY2 = Math.min(clipY2, boxBottom);
             }
@@ -916,7 +909,7 @@ $(function () {
                     }
                 }
             }
-            if (boxpos.left < x && boxRight > x && boxpos.top < y && boxBottom > y) {
+            if (node.boxPos.left < x && boxRight > x && node.boxPos.top < y && boxBottom > y) {
                 if (node.willNotDraw) {
                     if (firstNoDrawChild[0] == null) {
                         firstNoDrawChild[0] = node;
@@ -1404,7 +1397,7 @@ $(function () {
     /** ********************** Show/hide hidden nodes ********************** */
     // Hides the node and all its children recursively.
     const hideNode = function (node, hide) {
-        hide = hide || !(node.isVisible || node.visibility == VIEW_VISIBLE);
+        hide = hide || !node.isVisible
         if (hide) {
             node.box.style.display = "none"
             node.el.style.display = "none"

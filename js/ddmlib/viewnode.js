@@ -71,14 +71,6 @@ ViewNode.prototype.getFloat  = function(name, dValue) {
     return dValue;
 }
 
-ViewNode.prototype.updateNodeDrawn = function() {
-    this.nodeDrawn = !this.willNotDraw;
-    for (let i = 0; i < this.children.length; i++) {
-        this.children[i].updateNodeDrawn();
-        this.nodeDrawn |= (this.children[i].nodeDrawn && this.children[i].isVisible);
-    }
-}
-
 ViewNode.prototype.sortProperties = function() {
     this.properties.sort(function (a, b) {
         if (a.type > b.type) {
@@ -125,8 +117,8 @@ ViewNode.prototype.loadCommonProperties = function(map) {
             ? descProp.value : null;
     }
 
-    const visibility = this.getProp("visibility");
-    this.isVisible = !visibility || visibility.value == 0 || visibility.value == "VISIBLE";
+    this.visibility = this.getProp("visibility").value;
+    this.isVisible = !this.visibility || this.visibility.value == 0 || this.visibility.value == "VISIBLE";
 
     delete this.getProp;
 }
