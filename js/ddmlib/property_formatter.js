@@ -21,6 +21,7 @@ const EXCLUSION_LIST = new Set([
     "children",
     "parent",
     "classname",
+    "simpleName",
     "name",
     "boxPos",
     "boxStylePos",
@@ -84,8 +85,8 @@ const formatProperties = function(root /* ViewNode */) {
             node.name = node.classname
         }
 
-        let tName = node.name.split(".");
-        node.name = tName[tName.length - 1];
+        node.simpleName = node.name.split(".")
+        node.simpleName = node.simpleName[node.simpleName.length - 1];
 
         if (node.contentDesc != null) {
             node.name = node.name + " : " + node.contentDesc;
