@@ -12,7 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const EXCLUSION_LIST = new Set([ "toJSON", "$type", "constructor", "namedProperties", "properties", "children", "parent", "classname", "name", "boxPos", "boxStylePos", "desc" ])
+const EXCLUSION_LIST = new Set([
+    "toJSON",
+    "$type",
+    "constructor",
+    "namedProperties",
+    "properties",
+    "children",
+    "parent",
+    "classname",
+    "name",
+    "boxPos",
+    "boxStylePos",
+    "desc",
+    "isVisible",
+    "nodeDrawn"
+])
 
 const LAYOUT_TYPE = "Layout"
 const DRAWING_TYPE = "Drawing"
@@ -76,10 +91,13 @@ const formatProperties = function(root /* ViewNode */) {
             node.name = node.name + " : " + node.contentDesc;
         }
         node.desc = node.name;
+        node.isVisible = node.visibility == 0 || node.visibility == "VISIBLE" || node.visibility == undefined
+        node.nodeDrawn = !node.willNotDraw;
 
         for (let i = 0; i < node.children.length; i++) {
-            node.children[i].parent = node;
             inner(node.children[i], maxW, maxH, l - node.scrollX, t - node.scrollY, newScaleX, newScaleY);
+            node.children[i].parent = node;
+            node.nodeDrawn |= (node.children[i].nodeDrawn && node.children[i].isVisible);
         }
 
         if (node.properties == undefined) {
