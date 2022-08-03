@@ -189,7 +189,6 @@ DDMClient.prototype._newWindowLoaded = function (myCount, windowToIdMap) {
     });
 
     windowList.use_new_api = this.sdk_version >= 23;
-    windowList.hasIcons = true;
     this.callbacks.windowsLoaded(windowList);
 }
 

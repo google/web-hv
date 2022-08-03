@@ -54,18 +54,16 @@ const activityListAction = function (initializer) {
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
-        if (list.hasIcons) {
-            container.addClass("has-icons")
-        }
         for (let i = 0; i < list.length; i++) {
             const l = list[i];
             const entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 
-            if (list.hasIcons) {
-                const icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
-                if (l.icon && l.icon.value) {
-                    icon.css("background-image", `url(${l.icon.value})`);
-                }
+            const icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
+            if (l.isTimeLapse) {
+                icon.addClass("time-lapse")
+            }
+            if (l.icon && l.icon.value) {
+                icon.css("background-image", `url(${l.icon.value})`);
             }
 
             if (l.name == "") {

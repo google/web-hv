@@ -465,7 +465,8 @@ $(function () {
         for (let i = 0; i < favoriteProperties.length; i++) {
             const prop = node.namedProperties[favoriteProperties[i]];
             if (prop) {
-                addProp(prop, "Favorites").addClass(CLS_SELECTED);
+                const starSpan = addProp(prop, "Favorites")
+                starSpan.classList.add(CLS_SELECTED);
             }
         }
 
@@ -1343,7 +1344,7 @@ $(function () {
                     switchTheme();
                     break;
                 case 6:
-                    const submenuOffset = el.addClass(CLS_SELECTED).offset();
+                    const submenuOffset = $(el).addClass(CLS_SELECTED).offset();
                     showPreviewContext({pageX: submenuOffset.left + el.width() / 2, pageY: submenuOffset.top + el.height() / 4})
                     return true;    // Don't ide te existing popup
             }

@@ -36,12 +36,9 @@
     padding: 10px 30px;
     border-left: 4px solid transparent;
     box-shadow: 0 1px var(--divider-color);
+    min-height: 36px;
     transition: background 200ms;
     position: relative;
-}
-
-.activity-list.has-icons > .entry {
-    min-height: 36px;
 }
 
 .activity-list > .entry:hover {
@@ -80,8 +77,12 @@
     height: 36px;
     float: left;
     margin-right: 8px;
-    background: url(app_icon.png) no-repeat center center;
+    background-image: url(app_icon.png);
     background-size: 100%;
+}
+
+.activity-list .icon.time-lapse {
+    background-image: url("app_icon_under_chart-multiple.png");
 }
 
 .old-api {
