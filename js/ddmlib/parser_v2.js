@@ -140,7 +140,6 @@ const parseNode = function(bytes, bitShift) {
     }
 
     const root = parseNodeObj(views[0]);
-    root.updateNodeDrawn();
 
     const windowLeftIndex = pTable.indexOf("window:left");
     const windowTopIndex = pTable.indexOf("window:top");

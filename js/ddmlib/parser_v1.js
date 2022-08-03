@@ -87,6 +87,5 @@ const parseNode = function(data) {
         }
     }
 
-    root.updateNodeDrawn();
     return root;
 }
