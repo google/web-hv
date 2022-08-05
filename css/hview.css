@@ -104,17 +104,17 @@
 }
 
 #border-box div:is(.hover, .hover.selected, .hover.last_selected) {
-    box-shadow: 0 0 0 1px var(--under-cursor-color);
+    box-shadow: 0 0 0 1px var(--under-cursor-color) inset;
     z-index: 2000;
 }
 
 #border-box div.selected {
-    box-shadow: 0 0 0 1px var(--selected-color);
+    box-shadow: 0 0 0 1px var(--selected-color) inset;
     z-index: 1000;
 }
 
 #border-box div.last_selected {
-    box-shadow: 0 0 0 1px var(--last-selected-color);
+    box-shadow: 0 0 0 1px var(--last-selected-color) inset;
     z-index: 1000;
 }
 

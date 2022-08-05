@@ -35,7 +35,6 @@ $(function () {
     const xlinewrapProtoType = document.createElement("x-line-wrap")
     const xprofileProtoType = document.createElement("x-profile")
     const labelProtoType = document.createElement("label")
-    labelProtoType.classList.add(CLS_WITH_ARROW)
     const spanProtoType = document.createElement("span")
     const newContainerProtoType = divProtoType.cloneNode()
     newContainerProtoType.classList.add(CLS_TREENODE)
@@ -217,8 +216,8 @@ $(function () {
                     }
                 }
                 if (found > 0) {
-                    this.style.display = "inline-block"
-                    this.valspace.style.display = "inline-block"
+                    this.style.display = ""
+                    this.valspace.style.display = ""
 
                     total++;
                     if (!this.classList.contains(CLS_CLOSED)) {
@@ -258,7 +257,7 @@ $(function () {
     }
 
     const toggleFavorite = function (e) {
-        const name = $(this).data("pname");
+        const name = this.pName;
         if ($(this).toggleClass(CLS_SELECTED).hasClass(CLS_SELECTED)) {
             favoriteProperties.push(name);
         } else {
@@ -343,9 +342,9 @@ $(function () {
 
                 const typeSection = labelProtoType.cloneNode()
                 typeSection.classList.add(CLS_EXPANDABLE, CLS_WITH_ARROW)
+                typeSection.appendChild(spanProtoType.cloneNode())
                 typeSection.appendChild(document.createTextNode(type))
                 nameContainer.appendChild(typeSection)
-                typeSection.insertBefore(spanProtoType.cloneNode(), null)
 
                 const valSpace = labelProtoType.cloneNode()
                 valSpace.innerHTML = "&nbsp;"
@@ -369,8 +368,12 @@ $(function () {
             }
 
             const nameLabel = labelProtoType.cloneNode()
-            nameLabel.appendChild(spanProtoType.cloneNode())
-            nameLabel.appendChild(document.createTextNode(p.name))
+            const starSpan = spanProtoType.cloneNode()
+            nameLabel.appendChild(starSpan)
+
+            const nameLabelTextNode = spanProtoType.cloneNode();
+            nameLabelTextNode.appendChild(document.createTextNode(p.name));
+            nameLabel.appendChild(nameLabelTextNode)
             nameSubContainer.appendChild(nameLabel)
 
             const value = "" + p.value;
@@ -406,12 +409,28 @@ $(function () {
                     if (valueF == valueI) {
                         const valueU = valueI >>> 0;
                         let valueHex = "";
+                        let onChangeCallback = () => { };
+
                         if (p.name.search(/color$/i) >= 0) {
                             valueHex = toHex(valueU, 8);
                             const colorHexOption = optionProtoType.cloneNode()
                             colorHexOption.value = 'color-hex'
                             colorHexOption.innerHTML = "#" + valueHex
                             selectTag.appendChild(colorHexOption)
+
+                            colorWellDiv = divProtoType.cloneNode()
+                            colorWellDiv.classList.add(CLS_COLORWELL)
+                            onChangeCallback = () => {
+                                if (selectTag.value == 'color-hex') {
+                                    const webColor = '#' + toHex(argb2rgba(valueU), 8);
+                                    colorWellDiv.style.display = 'inline-block'
+                                    colorWellDiv.style.backgroundColor = webColor
+                                } else {
+                                    colorWellDiv.style.display = "none"
+                                }
+                            };
+                            selectTag.addEventListener("change", onChangeCallback);
+
                         } else {
                             valueHex = toHex(valueU);
                             const falgsHexOption = optionProtoType.cloneNode()
@@ -419,26 +438,12 @@ $(function () {
                             falgsHexOption.innerHTML = "0x" + valueHex
                             selectTag.appendChild(falgsHexOption)
                         }
-                        if (valueHex) {
-                            colorWellDiv = divProtoType.cloneNode()
-                            colorWellDiv.classList.add(CLS_COLORWELL)
-
-                            selectTag.onchange = () => {
-                                const myVal = "" + selectTag.val();
-                                if (myVal.startsWith("#")) {
-                                    const webColor = '#' + toHex(argb2rgba(valueU), 8);
-                                    colorWellDiv.style.display = 'inline-block'
-                                    colorWellDiv.style.backgroundColor = webColor
-                                } else {
-                                    colorWellDiv.style.display = "none"
-                                }
-                            }
-                        }
                         const valuePref = valueTypeMap[p.name];
                         if (valuePref != undefined) {
-                            const valueArray = Array.from(selectTag.children, function() { return this.value; })
+                            const valueArray = Array.from(selectTag.children, el => el.value);
                             if (valueArray.indexOf(valuePref) >= 0) {
-                                selectTag.val(valuePref);
+                                selectTag.value = valuePref;
+                                onChangeCallback();
                             }
                         }
                         selectTag.onchange = saveValueTypeSelect;
@@ -453,10 +458,8 @@ $(function () {
 
             valSubContainer.appendChild(labelTag)
 
-            const starSpan = spanProtoType.cloneNode()
             starSpan.classList.add("star")
             starSpan.pName = p.fullname
-            nameLabel.insertBefore(starSpan, null)
             starSpan.onclick = toggleFavorite
             return starSpan
         }
@@ -954,13 +957,13 @@ $(function () {
         $(this).unbind("mousemove").unbind("click").mousemove(onMove).click(function (e) {
             const found = findBox(e);
             if (found) {
-                found.el.click();
+                $(found.el).click();
                 scrollToNode(found);
             }
         }).unbind("contextmenu").bind("contextmenu", function (e) {
             const found = findBox(e);
             if (found) {
-                showNodeContext.call(found.el.get(0), e);
+                showNodeContext.call($(found.el).get(0), e);
             }
         });
 
