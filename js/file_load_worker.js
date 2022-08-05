@@ -143,6 +143,7 @@ async function loadBugFile(bugFile, list) {
                 name: "Launcher's View Capture",
                 data: tlHvDataAsBinaryArray,
                 type: TYPE_TIME_LAPSE_BUG_REPORT,
+                isTimeLapse: true,
                 display: { }
             })
         } else {
@@ -197,6 +198,7 @@ async function loadBugFile(bugFile, list) {
     }
 
     list.use_new_api = false;
+    list.hasIcons = true
     postMessage({type: TYPE_BUG_REPORT, list: list});
 }
 
