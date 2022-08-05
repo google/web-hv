@@ -120,7 +120,7 @@ const formatProperties = function(root /* ViewNode */) {
     }
 
     root.scaleX = root.scaleY = 1;
-    root.translationX = root.translationY = 1;
+    root.translationX = root.translationY = 0;
     inner(root, root.width, root.height, 0, 0, 1, 1)
     return root
 }
