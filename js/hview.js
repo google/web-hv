@@ -582,6 +582,7 @@ $(function () {
     
         const el = labelProtoType.cloneNode()
         container.appendChild(el)
+        el.classList.add(CLS_WITH_ARROW)
         el.onclick = selectNode
         el.onmouseover = mouseOverNode
         el.onmouseout = mouseOutNode
