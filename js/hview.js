@@ -577,7 +577,7 @@ $(function () {
 
         const elWrap = xlinewrapProtoType.cloneNode()
         elWrap.appendChild(span)
-        elWrap.appendChild(document.createTextNode(node.simpleName))
+        elWrap.appendChild(document.createTextNode(node.treeDisplayName))
         elWrap.appendChild(xprofileProtoType.cloneNode())
     
         const el = labelProtoType.cloneNode()
