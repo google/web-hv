@@ -21,7 +21,7 @@ const EXCLUSION_LIST = new Set([
     "children",
     "parent",
     "classname",
-    "simpleName",
+    "treeDisplayName",
     "name",
     "boxPos",
     "boxStylePos",
@@ -85,13 +85,13 @@ const formatProperties = function(root /* ViewNode */) {
             node.name = node.classname
         }
 
-        node.simpleName = node.name.split(".")
-        node.simpleName = node.simpleName[node.simpleName.length - 1];
+        node.treeDisplayName = node.name.split(".")
+        node.treeDisplayName = node.treeDisplayName[node.treeDisplayName.length - 1];
 
         if (node.contentDesc != null) {
-            node.name = node.name + " : " + node.contentDesc;
+            node.treeDisplayName = node.treeDisplayName + " : " + node.contentDesc;
         }
-        node.desc = node.name;
+        node.desc = node.treeDisplayName;
         node.isVisible = node.visibility == 0 || node.visibility == "VISIBLE" || node.visibility == undefined
         node.nodeDrawn = !node.willNotDraw;
 
