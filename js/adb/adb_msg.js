@@ -26,7 +26,7 @@ const AUTH_TYPE_TOKEN = 1;
 const AUTH_TYPE_SIGNATURE = 2;
 const AUTH_TYPE_RSAPUBLICKEY = 3;
 
-var commandMap = [];
+const commandMap = [];
 commandMap[SYNC_COMMAND] = "SYNC_COMMAND";
 commandMap[CNXN_COMMAND] = "CNXN_COMMAND";
 commandMap[OPEN_COMMAND] = "OPEN_COMMAND";
@@ -67,7 +67,7 @@ function computeAdbMessageDataCrc32(data) {
  * @return AdbMessageHeader object
  */
 function constructAdbHeader(command, arg0, arg1, data, version) {
-    var checksum;
+    let checksum;
     if (version >= VERSION_SKIP_CHECKSUM && command != AUTH_COMMAND && command != CNXN_COMMAND) {
         checksum = 0;
     } else if (data) {
@@ -149,10 +149,10 @@ function verifyAdbMessageData(header, data) {
 }
 
 /**
- * Appends to array bufferes
+ * Appends to array buffers
  */
 function appendBuffer(first, last) {
-    var result = new Uint8Array(first.byteLength + last.byteLength);
+    const result = new Uint8Array(first.byteLength + last.byteLength);
     result.set(first, 0);
     result.set(last, first.byteLength);
     return result;

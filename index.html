@@ -77,18 +77,23 @@
 
         <!-- Hierarchy View -->
         <div id="hview" class="content-panel hide hidden">
-            <!-- Main panel -->
-            <div class="frame showAsTab" id="vlist" style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
-                <!-- Search and custom command -->
-                <div id="hvTitle">
-                    <a title="Back" id="btn-go-back"></a>
-                    <span id="windowTitle"></span>
-                    <button title="Search node"  class="ic_search icon_btn" id="btn-search-node"></button>
-                    <button title="Custom command"  class="ic_play icon_btn" id="btn-custom-command"></button>
-                    <button title="More options" class="ic_options icon_btn" id="btn-options"></button>
+            <!-- Left panel -->
+            <div class="frame" style="left:10px;top:10px;bottom:10px;right:310px;position:absolute" limit="300">
+                <div class="constituent showAsTab" id="vlist" style="left:0px;right:0px;bottom:0px;top:0px;position:absolute;">
+                    <!-- Search and custom command -->
+                    <div id="hvTitle">
+                        <a title="Back" id="btn-go-back"></a>
+                        <span id="windowTitle"></span>
+                        <button title="Search node"  class="ic_search icon_btn" id="btn-search-node"></button>
+                        <button title="Custom command"  class="ic_play icon_btn" id="btn-custom-command"></button>
+                        <button title="More options" class="ic_options icon_btn" id="btn-options"></button>
+                    </div>
+                    <div id="vlist_content" class="treeview"></div>
                 </div>
 
-                <div id="vlist_content" class="treeview"></div>
+                <div class="slider-group hidden constituent" id="tl-range-container" style="position:absolute;left:0px;right:0px;bottom:0px;overflow:hidden;">
+                    <input type="range" id="tl-range" class="slider-group hidden" style="margin:10px;padding:0px;position:absolute;bottom:0px;top:0px;right:0px;left:0px;" autofocus>
+                </div>
             </div>
             <div style="right:300px;width:10px;top:0;bottom:0;cursor:ew-resize" class="divider" control="pageX,right,width" id="main-contnt-divider"></div>
 
@@ -96,7 +101,7 @@
             <div style="position:absolute;width:300px;top:0;bottom:0;right:0" limit="150" id="rcontent">
 
                 <!-- Properties -->
-                <div class="frame" id="pList" style="position:absolute;left:0px;top:10px;bottom:220px;right:10px;font-size:80%;" limit="200">
+                <div class="frame constituent" id="pList" style="position:absolute;left:0px;top:10px;bottom:220px;right:10px;font-size:80%;" limit="200">
                     <div class="right-title icon_btn ic_search">
                         <input type="search" id="pfilter" placeholder="Properties" />
                     </div>
@@ -114,7 +119,7 @@
                 <div style="bottom:210px;height:10px;left:0;right:0;cursor:ns-resize" class="divider" control="pageY,bottom,height" id="right-panel-divider"></div>
 
                 <!-- Screenshot -->
-                <div class="frame" id="sshot" style="position:absolute;left:0px;height:200px;bottom:10px;right:10px;font-size:80%;" limit="150">
+                <div class="frame constituent" id="sshot" style="position:absolute;left:0px;height:200px;bottom:10px;right:10px;font-size:80%;" limit="150">
                     <div id="box-border-container" style="position:absolute;left:2px;right:2px;top:3px;bottom:3px">
                         <div id="border-box" style="position:absolute" class="force-no-bg"></div>
                         <div id="image-preview" style="display:none"></div>
@@ -141,7 +146,7 @@
 
         <!-- Device mirror view -->
         <div id="dmirrorview" class="content-panel hide hidden">
-            <div class="frame" style="padding: 10px; left: 50%; top: 50%; position: absolute; display: inline-block; transform: translate(-50%, -50%); overflow: hidden;">
+            <div class="frame constituent" style="padding: 10px; left: 50%; top: 50%; position: absolute; display: inline-block; transform: translate(-50%, -50%); overflow: hidden;">
                 <div id="video-message">If the video does not apper, try redrawing the screen by interacting with the device</div>
             </div>
         </div>

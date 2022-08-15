@@ -12,30 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var CLS_EXPANDABLE = "expandable";
-var CLS_CLOSED = "closed";
-var CLS_TREENODE = "treenode";
-var CLS_SELECTED = "selected";
-var CLS_HOVER = "hover";
-var CLS_FORCE_NO_BG = "force-no-bg";
-var CLS_HIDE_MY_BG = "hide-my-bg";
-var CLS_DISABLED = "disabled";
-var CLS_WITH_ARROW = "with_arrow";
-var CLS_MULTI_TOGGLE = "multi-toggle"
-var CLS_COLORWELL = "colorwell";
+const CLS_EXPANDABLE = "expandable";
+const CLS_CLOSED = "closed";
+const CLS_TREENODE = "treenode";
+const CLS_SELECTED = "selected";
+const CLS_LAST_SELECTED = "last_selected";
+const CLS_HOVER = "hover";
+const CLS_FORCE_NO_BG = "force-no-bg";
+const CLS_HIDE_MY_BG = "hide-my-bg";
+const CLS_DISABLED = "disabled";
+const CLS_WITH_ARROW = "with_arrow";
+const CLS_MULTI_TOGGLE = "multi-toggle"
+const CLS_COLORWELL = "colorwell";
 
-var URL_LOADING = "_loading_";
+const URL_LOADING = "_loading_";
 
-var TYPE_ERROR = -1;
-var TYPE_ZIP = 0;
-var TYPE_OLD = 1;
-var TYPE_JDWP = 2;
-var TYPE_BUG_REPORT = 3;
-var TYPE_BUG_REPORT_V2 = 4;  // Bug report with encoded view hierarchy
+const TYPE_ERROR = -1;
+const TYPE_ZIP = 0;
+const TYPE_OLD = 1;
+const TYPE_JDWP = 2;
+const TYPE_BUG_REPORT = 3;
+const TYPE_BUG_REPORT_V2 = 4;  // Bug report with encoded view hierarchy
+const TYPE_TIME_LAPSE_BUG_REPORT = 5;
 
+const CMD_CONVERT_TO_STRING = 1;
+const CMD_PARSE_OLD_DATA = 2;
+const CMD_USE_PROPERTY_MAP = 4;
+const CMD_DEFLATE_STRING = 8;
+const CMD_SKIP_8_BITS = 16;
 
-var CMD_CONVERT_TO_STRING = 1;
-var CMD_PARSE_OLD_DATA = 2;
-var CMD_USE_PROPERTY_MAP = 4;
-var CMD_DEFLATE_STRING = 8;
-var CMD_SKIP_8_BITS = 16;
+const VIEW_VISIBLE = 0;
+const VIEW_CAPTURE_REGEX = /^\s*mViewCapture:\s*/

@@ -12,25 +12,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var hViewAction;
-var currentAppInfo;
+let hViewAction;
+let tlHvAction;
 
 $(function () {
-    var KEY_DIVIDER = "divider";
+    let currentAppInfo;
+    const KEY_DIVIDER = "divider";
 
-    var currentRootNode = null;
-    var selectedNode;
-    var favoriteProperties = [];
-    var viewController;
-    var showHiddenNodes = false;
-    var valueTypeMap = {};
+    let currentRootNode = null;
+    let selectedNode;
+    let lastSelectedNode;
+    let favoriteProperties = [];
+    let viewController;
+    let showHiddenNodes = false;
+    let valueTypeMap = {};
 
-    var closedSections = {};
+    const closedSections = {};
+
+    /* When showing time lapse view hierarchies, cloning these prototypes to build
+       the UX rather than constructing them every time saves ~1.25ms per iteration. */
+    const divProtoType = document.createElement("div")
+    const xlinewrapProtoType = document.createElement("x-line-wrap")
+    const xprofileProtoType = document.createElement("x-profile")
+    const labelProtoType = document.createElement("label")
+    const spanProtoType = document.createElement("span")
+    const newContainerProtoType = divProtoType.cloneNode()
+    newContainerProtoType.classList.add(CLS_TREENODE)
+    const selectProtoType = document.createElement("select")
+    const optionProtoType = document.createElement("option")
 
     // Load favorite properties
     if (localStorage.favoriteProps) {
         try {
-            var tmp = JSON.parse(localStorage.favoriteProps);
+            const tmp = JSON.parse(localStorage.favoriteProps);
             if (tmp && tmp.constructor == Array) {
                 favoriteProperties = tmp;
             }
@@ -40,7 +54,7 @@ $(function () {
     // Load favorite properties
     if (localStorage.valueTypeMap) {
         try {
-            var tmp = JSON.parse(localStorage.valueTypeMap);
+            const tmp = JSON.parse(localStorage.valueTypeMap);
             if (tmp && tmp.constructor == Object) {
                 valueTypeMap = tmp;
             }
@@ -48,17 +62,17 @@ $(function () {
     }
 
     // Create dividers
-    var shouldSaveResizeData = function() {
+    const shouldSaveResizeData = function() {
         return !$("#hviewtabs").is(":visible");
     }
 
-    var createDaggerDownControl = function(divider) {
-        var invalue1 = parseInt(divider.e1.css(divider.right));
-        var invalue2 = parseInt(divider.e2.css(divider.width));
-        var invalueDragger = parseInt(divider.dragger.css(divider.right));
+    const createDaggerDownControl = function(divider) {
+        const invalue1 = parseInt(divider.e1.css(divider.right));
+        const invalue2 = parseInt(divider.e2.css(divider.width));
+        const invalueDragger = parseInt(divider.dragger.css(divider.right));
 
-        var v1 = divider.e1[divider.width]();
-        var v2 = divider.e2[divider.width]();
+        const v1 = divider.e1[divider.width]();
+        const v2 = divider.e2[divider.width]();
 
         if (v1 == 0 || v2 == 0) {
             return function() {};
@@ -80,22 +94,22 @@ $(function () {
         }
     }
 
-    var handleMouseDown = function(e) {
-        var divider = $(this).data(KEY_DIVIDER);
-        var start = e[divider.pageX];
-        var control = createDaggerDownControl(divider);
+    const handleMouseDown = function(e) {
+        const divider = $(this).data(KEY_DIVIDER);
+        const start = e[divider.pageX];
+        const control = createDaggerDownControl(divider);
 
-        var handleMouseMove = function(e) {
+        const handleMouseMove = function(e) {
             control(e[divider.pageX] - start);
         }
 
-        var handleMouseUp = function(e) {
+        const handleMouseUp = function(e) {
             $(document).unbind();
 
             // Save settings.
-            var data = {};
+            let data = {};
             $(".divider").each(function () {
-                var obj = $(this).data(KEY_DIVIDER);
+                const obj = $(this).data(KEY_DIVIDER);
                 data[$(this).attr("id")] = obj.dragger.css(obj.right);
             });
             if (shouldSaveResizeData()) {
@@ -109,16 +123,16 @@ $(function () {
         }).bind("touchend", handleMouseUp);
     }
 
-    var handleTouchStart = function(e) {
+    const handleTouchStart = function(e) {
         e.preventDefault();
         handleMouseDown.apply(this, e.originalEvent.touches);
     }
 
     $(".divider").each(function () {
-        var el = $(this);
-        var controls = el.attr("control").split(",");
+        const el = $(this);
+        const controls = el.attr("control").split(",");
 
-        var obj = {
+        const obj = {
             dragger: el,
             pageX: controls[0],
             right: controls[1],
@@ -132,16 +146,16 @@ $(function () {
     }).mousedown(handleMouseDown).bind("touchstart", handleTouchStart);
 
     // Apply resize data
-    var applyResizeData = function() {
+    const applyResizeData = function() {
         if (localStorage.resizeData && shouldSaveResizeData()) {
-            let data = JSON.parse(localStorage.resizeData);
-            for (var id in data) {
-                var divider = $("#" + id).data(KEY_DIVIDER);
+            const data = JSON.parse(localStorage.resizeData);
+            for (const id in data) {
+                const divider = $("#" + id).data(KEY_DIVIDER);
                 if (!divider || (typeof data[id]) != "string") {
                     continue;
                 }
-                var invalueDragger = parseInt(divider.dragger.css(divider.right));
-                var val = parseInt(data[id]);
+                const invalueDragger = parseInt(divider.dragger.css(divider.right));
+                const val = parseInt(data[id]);
                 createDaggerDownControl(divider)(invalueDragger - val);
             }
         }
@@ -149,11 +163,11 @@ $(function () {
 
     // In case of properties box, its width can change with changes to right panel.
     (function () {
-        var obj = $("#properties-divider").data(KEY_DIVIDER);
+        const obj = $("#properties-divider").data(KEY_DIVIDER);
         $("#rcontent").on("resizing", function () {
-            var w1 = obj.e1.width();
+            const w1 = obj.e1.width();
             if (w1 < obj.l1) {
-                var delta = obj.l1 - w1;
+                const delta = obj.l1 - w1;
 
                 obj.e1.css("right", parseInt(obj.e1.css("right")) - delta);
                 obj.e2.css("width", parseInt(obj.e2.css("width")) - delta);
@@ -163,34 +177,34 @@ $(function () {
     })();
 
     /********************************* Filter properties *********************************/
-    var filterProperties = function () {
-        var q = $("#pfilter").val().trim().toLocaleLowerCase();
-        var sections = $(".pcontainer .expandable");
-        var total = 0;
+    const filterProperties = function () {
+        const q = $("#pfilter").val().trim().toLocaleLowerCase();
+        const sections = $(".pcontainer .expandable");
+        let total = 0;
 
         if (q == "") {
             $(".pcontainer label").show();
             sections.each(function () {
                 total++;
-                var left = $(this).data("lbox").children();
-                if (!$(this).hasClass(CLS_CLOSED)) {
+                const left = this.lbox.children;
+                if (!this.classList.contains(CLS_CLOSED)) {
                     total += left.length;
                 }
-                for (var i = 0; i < left.length; i++) {
+                for (let i = 0; i < left.length; i++) {
                     // Remove any formatting.
-                    var child = $(left[i]).children().eq(1);
+                    const child = $(left[i]).children().eq(1);
                     child.text(child.text());
                 }
             });
         } else {
-            var re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
+            const re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
             sections.each(function () {
-                var found = 0;
-                var left = $(this).data("lbox").children();
-                var right = $(this).data("rbox").children();
-                for (var i = 0; i < left.length; i++) {
-                    var child = $(left[i]).children().eq(1);
-                    var itemText = child.text();
+                let found = 0;
+                const left = this.lbox.children;
+                const right = this.rbox.children;
+                for (let i = 0; i < left.length; i++) {
+                    const child = $(left[i]).children().eq(1);
+                    const itemText = child.text();
                     if (itemText.toLocaleLowerCase().indexOf(q) > -1) {
                         child.html(itemText.replace(re, "<b>$1</b>"));
                         found++;
@@ -202,13 +216,16 @@ $(function () {
                     }
                 }
                 if (found > 0) {
-                    $(this).show().data("valspace").show();
+                    this.style.display = ""
+                    this.valspace.style.display = ""
+
                     total++;
-                    if (!$(this).hasClass(CLS_CLOSED)) {
+                    if (!this.classList.contains(CLS_CLOSED)) {
                         total += found;
                     }
                 } else {
-                    $(this).hide().data("valspace").hide();
+                    this.style.display = "none"
+                    this.valspace.style.display = "none"
                 }
             });
         }
@@ -218,29 +235,29 @@ $(function () {
     $("#pfilter").on("input", filterProperties);
 
     /** Loading image preview ****** */
-    var loadImage = function (node) {
+    const loadImage = function (node) {
         node.imageUrl = URL_LOADING;
         viewController.captureView(node.name).then(imageData => {
-            var blob = new Blob([imageData], { type: "image/png" });
-            var url = createUrl(blob);
+            const blob = new Blob([imageData], { type: "image/png" });
+            const url = createUrl(blob);
             node.imageUrl = url;
             if (node == currentRootNode) {
                 $("#border-box").css('background-image', 'url("' + node.imageUrl + '")');
             }
-            if (node.box.hasClass(CLS_SELECTED)) {
-                node.box.css('background-image', 'url("' + node.imageUrl + '")');
+            if (node.box.classList.contains(CLS_SELECTED)) {
+                node.box.style.backgroundImage = 'url("' + node.imageUrl + '")'
                 $("#image-preview").empty().css('background-image', 'url("' + node.imageUrl + '")');
             }
-        }).catch(() => {
+        }).catch((e) => {
             node.imageUrl = null;
-            if (node.box.hasClass(CLS_SELECTED)) {
+            if (node.box.classList.contains(CLS_SELECTED)) {
                 $("#image-preview").showError("Error loading image");
             }
         });
     }
 
-    var toggleFavorite = function (e) {
-        var name = $(this).data("pname");
+    const toggleFavorite = function (e) {
+        const name = this.pName;
         if ($(this).toggleClass(CLS_SELECTED).hasClass(CLS_SELECTED)) {
             favoriteProperties.push(name);
         } else {
@@ -251,216 +268,257 @@ $(function () {
         localStorage.favoriteProps = JSON.stringify(favoriteProperties);
     }
 
-    var propertySectionToggle = function (e) {
-        var me = $(this).toggleClass(CLS_CLOSED);
-        var left = me.data("lbox");
-        var right = me.data("rbox");
-        if (closedSections[me.text()] = me.hasClass(CLS_CLOSED)) {
-            left.slideUp("fast");
-            right.slideUp("fast");
+    const propertySectionToggle = function (e) {
+        this.classList.toggle(CLS_CLOSED)
+        if (closedSections[$(this).text()] = this.classList.contains(CLS_CLOSED)) {
+            $(this.lbox).slideUp("fast")
+            $(this.rbox).slideUp("fast")
         } else {
-            left.slideDown("fast");
-            right.slideDown("fast");
+            $(this.lbox).slideDown("fast")
+            $(this.rbox).slideDown("fast")
         }
         filterProperties();
     }
 
     /********************************* Selecting a node *********************************/
-    var toHex = function(i, len) {
-        var s = i.toString(16);
+    const toHex = function(i, len) {
+        let s = i.toString(16);
         if (s.length < len) {
             s = "0000000000000000".slice(0, len - s.length) + s;
         }
         return s;
     }
 
-    var argb2rgba = function(i) {
+    const argb2rgba = function(i) {
         // ensure unsigned 32-bit int
-        var ui32 = (0xFFFFFFFF & i) >>> 0;
+        const ui32 = (0xFFFFFFFF & i) >>> 0;
         // take one down, pass it around
         return (((ui32 & 0xFFFFFF) << 8) | (ui32 >>> 24));
     }
 
-    var selectNode = function () {
-        if ($(this).hasClass(CLS_SELECTED)) return;
-        $("#vlist_content .selected").removeClass(CLS_SELECTED);
-        $(this).addClass(CLS_SELECTED);
+    const selectNode = function () {
+        lastSelectedNode = selectedNode
+        selectedNode = this.node;
 
-        $("#border-box .selected, #image-preview").removeClass(CLS_SELECTED).css('background-image', 'none');
-        var box = $(this).data("box").addClass(CLS_SELECTED);
+        if (this.classList.contains(CLS_SELECTED)) return;
+        document.querySelectorAll(".last_selected").forEach((it) => {
+            it.classList.remove(CLS_LAST_SELECTED);
+        })
+        document.querySelectorAll(".selected").forEach((it) => {
+            it.classList.remove(CLS_SELECTED)
+            it.classList.add(CLS_LAST_SELECTED);
+        })
+        this.classList.add(CLS_SELECTED);
+        this.box.classList.add(CLS_SELECTED);
 
-        // Render properties;
-        var node = $(this).data("node");
-        var nHolder = $("#p_name").empty();
-        var vHolder = $("#p_val").empty();
+        $("#border-box .selected, #image-preview").css('background-image', 'none')
+        renderProperties(this.node)
 
-        var lastType = "";
-        var nSubHolder = nHolder;
-        var vSubHolder = vHolder;
+        // Apply image
+        if (this.node.imageUrl == URL_LOADING) {
+            // Show a loading message
+        } else if (this.node.imageUrl) {
+            this.box.style.backgroundImage = 'url("' + this.node.imageUrl + '")'
+            $("#image-preview").empty().css('background-image', 'url("' + this.node.imageUrl + '")');
+        } else {
+            loadImage(this.node);
+        }
+    }
 
-        var addProp = function (p, type) {
+    function renderProperties(node /* ViewNode */) {
+        const nameContainer = document.getElementById("p_name")
+        nameContainer.replaceChildren()
+
+        const valContainer = document.getElementById("p_val")
+        valContainer.replaceChildren()
+
+        let lastType = "";
+        let nameSubContainer = nameContainer
+        let valSubContainer = valContainer
+
+        const addProp = function (p, type) {
             if (type != lastType) {
                 lastType = type;
 
-                // Add section
-                var section = $("<label>").addClass(CLS_EXPANDABLE).addClass(CLS_WITH_ARROW).text(type).appendTo(nHolder).prepend("<span>");
-                var valspace = $("<label>").html("&nbsp;").appendTo(vHolder);
+                const typeSection = labelProtoType.cloneNode()
+                typeSection.classList.add(CLS_EXPANDABLE, CLS_WITH_ARROW)
+                typeSection.appendChild(spanProtoType.cloneNode())
+                typeSection.appendChild(document.createTextNode(type))
+                nameContainer.appendChild(typeSection)
 
-                nSubHolder = $("<div>").appendTo(nHolder);
-                vSubHolder = $("<div>").appendTo(vHolder);
-                section.data({
-                    lbox: nSubHolder,
-                    rbox: vSubHolder,
-                    valspace: valspace
-                }).click(propertySectionToggle);
+                const valSpace = labelProtoType.cloneNode()
+                valSpace.innerHTML = "&nbsp;"
+                valContainer.appendChild(valSpace)
+
+                nameSubContainer = divProtoType.cloneNode()
+                nameContainer.appendChild(nameSubContainer)
+                valSubContainer = divProtoType.cloneNode()
+                valContainer.appendChild(valSubContainer)
+
+                typeSection.lbox = nameSubContainer
+                typeSection.rbox = valSubContainer
+                typeSection.valspace = valSpace
+                typeSection.onclick = propertySectionToggle
 
                 if (closedSections[type]) {
-                    nSubHolder.hide();
-                    vSubHolder.hide();
-                    section.addClass(CLS_CLOSED);
+                    nameSubContainer.style.display = "none"
+                    valSubContainer.style.display = "none"
+                    typeSection.classList.add(CLS_CLOSED)
                 }
             }
 
-            var pName = $("<label>").append($("<span />").text(p.name)).appendTo(nSubHolder);
-            var value = "" + p.value;
+            const nameLabel = labelProtoType.cloneNode()
+            const starSpan = spanProtoType.cloneNode()
+            nameLabel.appendChild(starSpan)
 
-            var labelTag = $("<label>");
+            const nameLabelTextNode = spanProtoType.cloneNode();
+            nameLabelTextNode.appendChild(document.createTextNode(p.name));
+            nameLabel.appendChild(nameLabelTextNode)
+            nameSubContainer.appendChild(nameLabel)
+
+            const value = "" + p.value;
+            const labelTag = labelProtoType.cloneNode()
 
             if (value == "") {
-                labelTag.html("&nbsp;");
+                labelTag.innerHTML = "&nbsp;"
             } else {
-                var valueF = parseFloat(p.value);
-                var valueI = parseInt(p.value);
-                var colorWell = undefined;
+                const valueF = parseFloat(p.value);
+                const valueI = parseInt(p.value);
+                let colorWellDiv = undefined;
 
                 if (!isNaN(valueF)) {
                     // Numbers could mean any number (sorry) of things, so let's try to show 
                     // some relevant interpretations, switchable via <option> drop-down.
-                    var selectTag = $(`<select name="${p.name}">`).append($("<option value='default'>").text(value));
+                    const selectTag = selectProtoType.cloneNode()
+                    selectTag.name = p.name
+                    const optionTag = optionProtoType.cloneNode()
+                    optionTag.value = 'default'
+                    optionTag.innerHTML = value
+                    selectTag.appendChild(optionTag)
+
                     if (viewController.density > 0) {
-                        var dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
+                        const dp = Math.round(valueF * 160 * 100 / viewController.density) / 100;
                         if (Math.abs(dp) < 10000) {
                             // probably a reasonable dimension
-                            selectTag.append($("<option value='size-dp'>").text(dp + " dp"));
+                            const sizeDpOption = optionProtoType.cloneNode()
+                            sizeDpOption.value = 'size-dp'
+                            sizeDpOption.innerHTML = dp + " dp"
+                            selectTag.appendChild(sizeDpOption)
                         }
                     }
                     if (valueF == valueI) {
-                        var valueU = valueI >>> 0;
-                        var valueHex = "";
+                        const valueU = valueI >>> 0;
+                        let valueHex = "";
+                        let onChangeCallback = () => { };
+
                         if (p.name.search(/color$/i) >= 0) {
                             valueHex = toHex(valueU, 8);
-                            selectTag.append(
-                                $("<option value='color-hex'>").text("#" + valueHex)
-                            );
-                        } else {
-                            var valueHex = toHex(valueU);
-                            selectTag.append($("<option value='falgs-hex'>").text("0x" + valueHex));
-                        }
-                        if (valueHex) {
-                            colorWell = $("<div>").addClass(CLS_COLORWELL);
-                            selectTag.change(() => {
-                                var myVal = "" + selectTag.val();
-                                if (myVal.startsWith("#")) {
-                                    var webColor = '#' + toHex(argb2rgba(valueU), 8);
-                                    colorWell.css('display', 'inline-block').css('background-color', webColor);
+                            const colorHexOption = optionProtoType.cloneNode()
+                            colorHexOption.value = 'color-hex'
+                            colorHexOption.innerHTML = "#" + valueHex
+                            selectTag.appendChild(colorHexOption)
+
+                            colorWellDiv = divProtoType.cloneNode()
+                            colorWellDiv.classList.add(CLS_COLORWELL)
+                            onChangeCallback = () => {
+                                if (selectTag.value == 'color-hex') {
+                                    const webColor = '#' + toHex(argb2rgba(valueU), 8);
+                                    colorWellDiv.style.display = 'inline-block'
+                                    colorWellDiv.style.backgroundColor = webColor
                                 } else {
-                                    colorWell.hide();
+                                    colorWellDiv.style.display = "none"
                                 }
-                            })
+                            };
+                            selectTag.addEventListener("change", onChangeCallback);
+
+                        } else {
+                            valueHex = toHex(valueU);
+                            const falgsHexOption = optionProtoType.cloneNode()
+                            falgsHexOption.value = 'falgs-hex'
+                            falgsHexOption.innerHTML = "0x" + valueHex
+                            selectTag.appendChild(falgsHexOption)
                         }
-                        var valuePref = valueTypeMap[p.name];
-                        if (valuePref != undefined && selectTag.children().map(function() { return this.value; }).get().indexOf(valuePref) >= 0) {
-                            selectTag.val(valuePref);
+                        const valuePref = valueTypeMap[p.name];
+                        if (valuePref != undefined) {
+                            const valueArray = Array.from(selectTag.children, el => el.value);
+                            if (valueArray.indexOf(valuePref) >= 0) {
+                                selectTag.value = valuePref;
+                                onChangeCallback();
+                            }
                         }
-                        selectTag.change(saveValueTypeSelect);
+                        selectTag.onchange = saveValueTypeSelect;
                     }
-                    labelTag.addClass(CLS_MULTI_TOGGLE).append(selectTag);
-                    if (colorWell) labelTag.append(colorWell);
+                    labelTag.classList.add(CLS_MULTI_TOGGLE)
+                    labelTag.appendChild(selectTag);
+                    if (colorWellDiv) labelTag.appendChild(colorWellDiv);
                 } else {
-                    labelTag.text(value);
+                    labelTag.appendChild(document.createTextNode(value))
                 }
             }
 
-            labelTag.appendTo(vSubHolder);
+            valSubContainer.appendChild(labelTag)
 
-            return $("<span>").addClass("star").data("pname", p.fullname).prependTo(pName).click(toggleFavorite);
+            starSpan.classList.add("star")
+            starSpan.pName = p.fullname
+            starSpan.onclick = toggleFavorite
+            return starSpan
         }
 
         // Selected properties
-        for (var i = 0; i < favoriteProperties.length; i++) {
-            var prop = node.namedProperties[favoriteProperties[i]];
+        for (let i = 0; i < favoriteProperties.length; i++) {
+            const prop = node.namedProperties[favoriteProperties[i]];
             if (prop) {
-                addProp(prop, "Favorites").addClass(CLS_SELECTED);
+                const starSpan = addProp(prop, "Favorites")
+                starSpan.classList.add(CLS_SELECTED);
             }
         }
 
-        for (var i = 0; i < node.properties.length; i++) {
-            var p = node.properties[i];
+        for (let i = 0; i < node.properties.length; i++) {
+            const p = node.properties[i];
             if (favoriteProperties.indexOf(p.fullname) < 0) {
                 addProp(p, p.type);
             }
         }
         filterProperties();
-        selectedNode = node;
-
-        // Apply image
-        if (node.imageUrl == URL_LOADING) {
-            // Show a loading message
-        } else if (node.imageUrl) {
-            box.css('background-image', 'url("' + node.imageUrl + '")');
-            $("#image-preview").empty().css('background-image', 'url("' + node.imageUrl + '")');
-        } else {
-            loadImage(node);
-        }
     }
 
-    var saveValueTypeSelect = function() {
+    const saveValueTypeSelect = function() {
         valueTypeMap[$(this).attr("name")] = $(this).val();
-        var data = JSON.stringify(valueTypeMap);
+        const data = JSON.stringify(valueTypeMap);
         localStorage.valueTypeMap = data;
     }
 
-    var profileInfoBox = $("#profile-info");
-    var mouseOverNode = function () {
-        $(this).data("box").addClass(CLS_HOVER);
+    const profileInfoBox = $("#profile-info");
+    const mouseOverNode = function () {
+        this.box.classList.add(CLS_HOVER)
 
-        var node = $(this).data("node");
-        if (node.profiled) {
-            profileInfoBox.find("#profile-info-m").text(node.measureTime.toFixed(5));
-            profileInfoBox.find("#profile-info-l").text(node.layoutTime.toFixed(5));
-            profileInfoBox.find("#profile-info-d").text(node.drawTime.toFixed(5));
+        if (this.node.profiled) {
+            profileInfoBox.find("#profile-info-m").text(this.node.measureTime.toFixed(5));
+            profileInfoBox.find("#profile-info-l").text(this.node.layoutTime.toFixed(5));
+            profileInfoBox.find("#profile-info-d").text(this.node.drawTime.toFixed(5));
             profileInfoBox.show();            
         }
     }
-    var mouseOutNode = function () {
-        $(this).data("box").removeClass(CLS_HOVER);
+    const mouseOutNode = function () {
+        this.box.classList.remove(CLS_HOVER)
         profileInfoBox.hide();
     }
 
-    var setEnabled = function (el, isEnabled) {
-        if (isEnabled) {
-            el.removeClass(CLS_DISABLED);
-        } else {
-            el.addClass(CLS_DISABLED);
-        }
-    }
-
-    var showNodeContext = function (e) {
+    const showNodeContext = function (e) {
         e.preventDefault();
         selectNode.call(this);
 
-        var node = $(this).data("node");
-        var menu = [
+        const menu = [
             {
                 text: "Save PNG",
                 icon: "ic_save",
-                disabled: !(node.imageUrl && node.imageUrl != URL_LOADING),
+                disabled: !(this.node.imageUrl && this.node.imageUrl != URL_LOADING),
                 id: 0
             },
             {
                 text: "Reload PNG",
                 icon: "ic_refresh",
-                disabled: node.imageUrl == URL_LOADING,
+                disabled: this.node.imageUrl == URL_LOADING,
                 id: 1
             }
         ];
@@ -474,7 +532,7 @@ $(function () {
         }
         menu.push(null);
 
-        if (!node.disablePreview) {
+        if (!this.node.disablePreview) {
             menu.push({
                 text: "Disable preview",
                 icon: "ic_hide",
@@ -498,101 +556,74 @@ $(function () {
     }
 
     /********************************* Rendering code *********************************/
-    var treeToggle = function (e) {
+    const treeToggle = function (e) {
         $(this).next()[$(this).toggleClass(CLS_CLOSED).hasClass(CLS_CLOSED) ? "hide" : "show"]();
     }
-    var treeToggleFromArrow = function (e) {
+    const treeToggleFromArrow = function (e) {
         $(this).parent().dblclick();
     }
 
-    var renderNode = function (node, container, boxContainer, maxW, maxH, leftShift, topshift, scaleX, scaleY) {
-        var newScaleX = scaleX * node.scaleX;
-        var newScaleY = scaleY * node.scaleY;
+    const renderNode = function (node, container, boxContainer) {
+        const box = divProtoType.cloneNode()
+        box.style.left = node.boxStylePos.left;
+        box.style.top = node.boxStylePos.top;
+        box.style.width = node.boxStylePos.width;
+        box.style.height = node.boxStylePos.height;
+        box.node = node
+        boxContainer.appendChild(box)
 
-        var l = leftShift + (node.left + node.translateX) * scaleX + node.width * (scaleX - newScaleX) / 2;
-        var t = topshift + (node.top + node.translateY) * scaleY + node.height * (scaleY - newScaleY) / 2;
-        var boxPos = {
-            left: l,
-            top: t,
-            width: node.width * newScaleX,
-            height: node.height * newScaleY,
-        };
+        const span = spanProtoType.cloneNode()
+        span.onclick = treeToggleFromArrow
 
-        var box = $("<div>").css({
-            left: (boxPos.left * 100 / maxW) + "%",
-            top: (boxPos.top * 100 / maxH) + "%",
-            width: (boxPos.width * 100 / maxW) + "%",
-            height: (boxPos.height * 100 / maxH) + "%",
-        }).appendTo(boxContainer).data("node", node);
+        const elWrap = xlinewrapProtoType.cloneNode()
+        elWrap.appendChild(span)
+        elWrap.appendChild(document.createTextNode(node.treeDisplayName))
+        elWrap.appendChild(xprofileProtoType.cloneNode())
+    
+        const el = labelProtoType.cloneNode()
+        container.appendChild(el)
+        el.classList.add(CLS_WITH_ARROW)
+        el.onclick = selectNode
+        el.onmouseover = mouseOverNode
+        el.onmouseout = mouseOutNode
+        el.oncontextmenu = showNodeContext
+        el.appendChild(elWrap)
+        el.node = node
+        el.box = box
 
-        var name = node.name.split(".");
-        name = name[name.length - 1];
+        box.el = el
 
-        var desc = node.contentDesc;
-        if (desc != null) {
-            name = name + " : " + desc;
-        }
-        node.desc = name;
-
-        var elWrap = $("<x-line-wrap>").text(name).append($("<x-profile>"));
-        var el = $("<label>").appendTo(container).addClass(CLS_WITH_ARROW)
-            .data({
-                node: node,
-                box: box
-            })
-            .click(selectNode).hover(mouseOverNode, mouseOutNode).bind("contextmenu", showNodeContext)
-            .append(elWrap);
-
-        node.box = box;
-        node.el = el;
-        node.boxpos = boxPos;
-        $("<span>").prependTo(elWrap).click(treeToggleFromArrow);
+        node.box = box
+        node.el = el
 
         if (node.children.length) {
-            el.addClass(CLS_EXPANDABLE).dblclick(treeToggle);
-            var container = $("<div>").addClass(CLS_TREENODE).appendTo(container);
-            var shiftX = l - node.scrollX;
-            var shiftY = t - node.scrollY;
-            for (var i = 0; i < node.children.length; i++) {
-                renderNode(node.children[i], container, boxContainer, maxW, maxH, shiftX, shiftY, newScaleX, newScaleY);
+            el.classList.add(CLS_EXPANDABLE)
+            el.ondblclick = treeToggle
+            const newContainer = newContainerProtoType.cloneNode()
+            container.appendChild(newContainer)
+            for (let i = 0; i < node.children.length; i++) {
+                renderNode(node.children[i], newContainer, boxContainer);
             }
         }
     }
 
-    var renderList = function (root) {
-        $("#hview").removeClass("hide").removeClass("hidden");
-        $("#main-progress").hide();
-
-        var boxContent = $("#border-box").empty();
-        currentRootNode = root;
-
-        // Clear all transform from the root, so that it matches the preview
-        root.scaleX = root.scaleY = 1;
-        root.translateX = root.translateY = 1;
-
-        renderNode(root, $("#vlist_content").empty(), boxContent, root.width, root.height, 0, 0, 1, 1);
-        resizeBoxView();
-        $("#vlist_content label").first().click();
-        showHiddenNodeOptionChanged();
-    }
-
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
-        $("#main-progress").show();
-        $("#device-list-content").empty().hide();
-        $("#darkThemeSwitch").remove();
-        $("#hview").removeClass("hide");
+        showViewHierarchyUX()
 
         viewController = createViewController(appInfo);
-        viewController.loadViewList().then(v => {
-            renderList(v);
-            applyResizeData();
-        })
-            .catch(msg => {
-            // Error loading list.
-            $("#hview").removeClass("hide").removeClass("hidden");
-            $("#vlist_content").showError(msg ? msg : "Error loading view hierarchy");
-        });
+        viewController.loadViewList().then(rootNode => {
+            currentRootNode = rootNode;
+
+            const vListContent = document.getElementById("vlist_content")
+            vListContent.replaceChildren()
+            const borderBox = document.getElementById("border-box")
+            borderBox.replaceChildren()
+            renderNode(rootNode, vListContent, borderBox)
+
+            onFirstViewHierarchyRendered()
+            $("#main-progress").hide();
+        }).catch(msg => { handleLoadingListError(msg) });
 
         if (viewController.customCommand) {
             $("#btn-custom-command").show();
@@ -601,37 +632,232 @@ $(function () {
             $("#btn-custom-command").hide();
         }
 
+        setupWindowTitle(appInfo)
+        currentAppInfo = appInfo;
+        setupBackButton(appInfo)
+    }
+
+    function setupBackButton(appInfo) {
+        $("#btn-go-back")
+            .show()
+            .unbind("click")
+            .click(function() {
+                if (appInfo.goBack) {
+                    $("#btn-go-back").unbind("click");
+                    $("#hview").addClass("hide hidden")
+                    $("#device-list-content")
+                        .empty()
+                        .show();
+                    $(".slider-group").addClass("hidden").removeClass("visible")
+                    $("#vlist, #border-box").removeClass("multi-page")
+                    appInfo.goBack();
+                } else {
+                    window.location.reload()
+                }
+            })
+    }
+
+    function showViewHierarchyUX() {
+        $("#vlist_content, #border-box").empty()
+        $("#main-progress").show()
+        $("#device-list-content").hide()
+        $("#darkThemeSwitch").hide()
+        $("#hview").removeClass("hide").removeClass("hidden");
+    }
+
+    function onFirstViewHierarchyRendered() {
+        resizeBoxView();
+        showHiddenNodeOptionChanged();    
+        applyResizeData();
+        $("#vlist_content label").first().click();
+    }
+
+    tlHvAction = function(appInfo) {
+        currentAppInfo = appInfo
+        /* Set this to avoid null pointer exceptions. */
+        viewController = new NoOpServiceController()
+
+        showViewHierarchyUX()
+        $("#btn-custom-command").hide();
+        setupWindowTitle(currentAppInfo)
+        setupBackButton(appInfo)
+        $(".slider-group").removeClass("hidden").addClass("visible")
+        $("#vlist, #border-box").addClass("multi-page")
+
+        function addToNodeMap(node /* ViewNode */, rootNodeIndex /* Integer */) {
+            let mapValue /* ViewNode[] | null */ = nodeMap.get(node.name)
+            if (mapValue == null) {
+                mapValue = Array(rootNodes.length)
+                nodeMap.set(node.name, mapValue)
+            }
+            mapValue[rootNodeIndex] = node
+            for (let i = 0; i < node.children.length; i++) {
+                addToNodeMap(node.children[i], rootNodeIndex)
+            }
+        }
+
+        const vListDivs /* <div>[] */  = []
+        const boxDivs /* <div>[] */ = []
+        const rootNodes /* ViewNode[] */ = []
+        const nodeMap /* Map<String, ViewNode[]> | null */ = new Map()
+
+        let frameCount;
+        let processedIndex /* Integer */ = 0
+
+        /* If you are wondering why this work is not completely done in the web worker, its because JQuery/DOM
+           manipulation needs a DOM in order to work properly. I tried using a fake DOM, and JQuery's
+           append/after/before methods didn't work. Also, functions cannot be passed to and from WebWorkers,
+           so the hover / click / etc. methods can't be prepared off the main thread. Aside from WebWorkers,
+           browser Javascript doesn't provide any alternative methods of multi-threaded programming. */
+        function processRootNode(event) {
+            const rootNode = event.data.rootNode
+            const tBox = divProtoType.cloneNode()
+            const tVList = divProtoType.cloneNode()
+
+            renderNode(rootNode, tVList, tBox)
+            rootNodes.push(rootNode)
+            vListDivs.push(tVList)
+            boxDivs.push(tBox)
+            addToNodeMap(rootNode, processedIndex)
+
+            if (processedIndex == 0) {
+                currentRootNode = event.data.rootNode
+                document.getElementById("vlist_content").replaceChildren(...tVList.childNodes)
+                document.getElementById("border-box").replaceChildren(...tBox.childNodes)
+                onFirstViewHierarchyRendered()
+            }
+            processedIndex++
+
+            if (processedIndex < frameCount) {
+                w.postMessage({ processedIndex: processedIndex })
+            } else {
+                $("#main-progress").hide()
+            }
+        }
+
+        /* It takes > 500ms to format 170 frames of launcher view hierarchy data,
+           and then copy that data over from the worker thread to the main thread.
+           In order to compensate for that, nodes are being continually formatted
+           until completion on the background thread, and then copied over as needed
+           1 at a time (copying an already formatted node takes ~1-2ms).
+
+           The natural pauses that come from requesting and receiving nodes from the
+           worker thread allow for a responsive and jank free UI while the entire collection
+           of view hierarchies are processed. */
+        const w = createWorker("js/ddmlib/tl-worker.js");
+        w.onerror = function () {
+            throw "Error parsing view data"
+        }
+        // Handle the first message, then delegate the rest of the responses to processRootNode
+        w.onmessage = function (e) {
+            frameCount = e.data.frameCount
+            document.getElementById("tl-range").max = frameCount
+            w.onmessage = processRootNode
+            w.postMessage({ processedIndex: processedIndex })
+        }
+        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
+
+        function hasDifferentProperties(node /* ViewNode!! */, other /* ViewNode!! */) {
+            return node.id != other.id
+                || node.left != other.left
+                || node.top != other.top
+                || node.width != other.width
+                || node.height != other.height
+                || node.translationX != other.translationX
+                || node.translationY != other.translationY
+                || node.scaleX != other.scaleX
+                || node.scaleY != other.scaleY
+                || node.alpha != other.alpha
+                || node.willNotDraw != other.willNotDraw
+                || node.clipChildren != other.clipChildren
+                || node.visibility != other.visibility
+                || node.scrollX != other.scrollX
+                || node.scrollY != other.scrollY
+        }
+
+        function migrateSelectedState(index /* Integer */) {
+            function migrateOne(node /* ViewNode? */, clazz /* String */) {
+                if (node == null) return
+
+                function toggle() {
+                    if (node == null) return
+                    ["el", "box"].forEach((it) => node[it].classList.toggle(clazz))
+                }
+
+                toggle()
+                node = nodeMap.get(node.name)[index]
+                toggle()
+                return node
+            }
+
+            const lastFramesSelectedNode = selectedNode
+            selectedNode = migrateOne(selectedNode, CLS_SELECTED)
+
+            if (selectedNode != null && hasDifferentProperties(lastFramesSelectedNode, selectedNode)) {
+                renderProperties(selectedNode)
+            }
+
+            lastSelectedNode = migrateOne(lastSelectedNode, CLS_LAST_SELECTED)
+        }
+
+        function switchViewHierarchy(newIndex /* Integer */, oldIndex /* Integer */) {
+            const vListContent = document.getElementById("vlist_content")
+            const borderBox = document.getElementById("border-box")
+
+            vListDivs[oldIndex].replaceChildren(...vListContent.childNodes)
+            vListContent.replaceChildren(...vListDivs[newIndex].childNodes)
+
+            boxDivs[oldIndex].replaceChildren(...borderBox.childNodes)
+            borderBox.replaceChildren(...boxDivs[newIndex].childNodes)
+        }
+
+        let previousIndex = 0
+
+        $("#tl-range")
+            .val("0")
+            .unbind("input change")
+            .on("input change", (jQueryEvent) => {
+                /* vListJQueries.length - 1 represents the number of root nodes that have already been processed
+                   and are available to be shown as a view hierarchy to the user. */
+                const index = Math.min(jQueryEvent.target.value, vListDivs.length - 1)
+                if (previousIndex != index) {
+                    // Ordering of methods within 'if statement' matters for correct behavior
+                    migrateSelectedState(index)
+                    switchViewHierarchy(index, previousIndex)
+
+                    currentRootNode = rootNodes[index]
+                    showHiddenNodeOptionChanged()
+
+                    previousIndex = index
+                    $("#tl-range").val(index)
+                }
+            })
+    }
+
+    function setupWindowTitle(appInfo) {
         let title = appInfo.name.split(".");
         title = title[title.length - 1];
         $("#windowTitle").text(document.title = title + " [" + appInfo.name + "]")
-        currentAppInfo = appInfo;
+    }
 
-        if (appInfo.goBack) {
-            $("#btn-go-back").unbind("click").show().click(function() {
-                $("#btn-go-back").unbind("click");
-                $("#hview").addClass("hide").addClass("hidden");
-                $("#device-list-content").empty().show();
-                appInfo.goBack();
-            })
-        } else {
-            $("#btn-go-back").unbind("click").hide();
-        }
-
+    function handleLoadingListError (msg) {
+        $("#hview").removeClass("hide").removeClass("hidden")
+        $("#vlist_content").showError(msg ? msg : "Error loading view hierarchy")
     }
 
     /********************************* Preview Grid resize *********************************/
-    var resizeBoxView = function () {
+    const resizeBoxView = function () {
         if (!currentRootNode) return;
-        var container = $("#box-border-container");
-        var cW = container.width();
-        var cH = container.height();
+        const container = $("#box-border-container");
+        const cW = container.width();
+        const cH = container.height();
 
-        var mW = currentRootNode.width;
-        var mH = currentRootNode.height;
-        var scale = Math.min(cW / mW, cH / mH);
+        const mW = currentRootNode.width;
+        const mH = currentRootNode.height;
+        const scale = Math.min(cW / mW, cH / mH);
 
-        var w = scale * mW;
-        var h = scale * mH;
+        const w = scale * mW;
+        const h = scale * mH;
         $("#border-box").css({
             width: w,
             height: h,
@@ -642,57 +868,52 @@ $(function () {
     $("#rcontent, #sshot").on("resizing", resizeBoxView);
 
     /** ********************** Box hover handling ***************** */
-    var scrollToNode = function (node) {
+    const scrollToNode = function (node) {
         // expand nodes recursively
-        var parent = node.parent;
+        let parent = node.parent;
         while (parent) {
-            if (parent.el.hasClass(CLS_EXPANDABLE) && parent.el.hasClass(CLS_CLOSED)) {
-                parent.el.removeClass(CLS_CLOSED).next().show();
+            if (parent.el.classList.contains(CLS_EXPANDABLE) && parent.el.classList.contains(CLS_CLOSED)) {
+                $(parent.el).removeClass(CLS_CLOSED).next().show();
             }
             parent = parent.parent;
         }
-        scrollToView(node.el, $("#vlist_content"));
+        scrollToView($(node.el), $("#vlist_content"));
     }
 
+    /* TODO: When selecting UX element, select the top-most element. Currently, clicking on anything 
+       within the border-box usually highlights the ScrimView as opposed to the actual target element. */
     $("#border-box").mouseover(function (e) {
-        var offset = $(this).offset();
+        const offset = $(this).offset();
 
-        var nodesHidden = !showHiddenNodes;
-        var widthFactor = currentRootNode.width / $(this).width();
-        var heightFactor = currentRootNode.height / $(this).height();
+        const nodesHidden = !showHiddenNodes;
+        const widthFactor = currentRootNode.width / $(this).width();
+        const heightFactor = currentRootNode.height / $(this).height();
 
-        var updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
-            if (node.disablePreview) {
-                return null;
-            }
-            if (!node.nodeDrawn) {
-                return null;
-            }
-            if (nodesHidden && !node.isVisible) {
+        const updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
+            if (node.disablePreview || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
                 return null;
             }
 
-            var wasFirstNoDrawChildNull = firstNoDrawChild[0] == null;
-            var boxpos = node.boxpos;
+            const wasFirstNoDrawChildNull = firstNoDrawChild[0] == null;
 
-            var boxRight = boxpos.width + boxpos.left;
-            var boxBottom = boxpos.top + boxpos.height;
+            const boxRight = node.boxPos.width + node.boxPos.left;
+            const boxBottom = node.boxPos.top + node.boxPos.height;
             if (node.clipChildren) {
-                clipX1 = Math.max(clipX1, boxpos.left);
-                clipY1 = Math.max(clipY1, boxpos.top);
+                clipX1 = Math.max(clipX1, node.boxPos.left);
+                clipY1 = Math.max(clipY1, node.boxPos.top);
                 clipX2 = Math.min(clipX2, boxRight);
                 clipY2 = Math.min(clipY2, boxBottom);
             }
             if (clipX1 < x && clipX2 > x && clipY1 < y && clipY2 > y) {
-                for (var i = node.children.length - 1; i >= 0; i--) {
-                    var child = node.children[i];
-                    var ret = updateSelection(child, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2);
+                for (let i = node.children.length - 1; i >= 0; i--) {
+                    const child = node.children[i];
+                    const ret = updateSelection(child, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2);
                     if (ret != null) {
                         return ret;
                     }
                 }
             }
-            if (boxpos.left < x && boxRight > x && boxpos.top < y && boxBottom > y) {
+            if (node.boxPos.left < x && boxRight > x && node.boxPos.top < y && boxBottom > y) {
                 if (node.willNotDraw) {
                     if (firstNoDrawChild[0] == null) {
                         firstNoDrawChild[0] = node;
@@ -708,39 +929,42 @@ $(function () {
             return null;
         }
 
-        var lastMatch = $("#border-box div.hover").data("node");
-        var findBox = function (e) {
-            var x = (e.pageX - offset.left) * widthFactor;
-            var y = (e.pageY - offset.top) * heightFactor;
-            var firstNoDrawChild = [null];
+        let lastMatch = document.querySelector("#border-box div.hover")
+        if (lastMatch) {
+            lastMatch = lastMatch.node
+        }
+        const findBox = function (e) {
+            const x = (e.pageX - offset.left) * widthFactor;
+            const y = (e.pageY - offset.top) * heightFactor;
+            const firstNoDrawChild = [null];
             return updateSelection(currentRootNode, x, y, firstNoDrawChild, 0, 0, currentRootNode.width, currentRootNode.height);
         }
-        var onMove = function (e) {
-            var found = findBox(e);
+        const onMove = function (e) {
+            const found = findBox(e);
             if (found != lastMatch) {
                 if (lastMatch) {
-                    lastMatch.el.removeClass(CLS_HOVER);
-                    lastMatch.box.removeClass(CLS_HOVER);
+                    lastMatch.el.classList.remove(CLS_HOVER);
+                    lastMatch.box.classList.remove(CLS_HOVER);
                 }
 
                 if (found) {
-                    found.el.addClass(CLS_HOVER);
-                    found.box.addClass(CLS_HOVER);
+                    found.el.classList.add(CLS_HOVER);
+                    found.box.classList.add(CLS_HOVER);
                 }
                 lastMatch = found;
             }
         }
 
         $(this).unbind("mousemove").unbind("click").mousemove(onMove).click(function (e) {
-            var found = findBox(e);
+            const found = findBox(e);
             if (found) {
-                found.el.click();
+                $(found.el).click();
                 scrollToNode(found);
             }
         }).unbind("contextmenu").bind("contextmenu", function (e) {
-            var found = findBox(e);
+            const found = findBox(e);
             if (found) {
-                showNodeContext.call(found.el.get(0), e);
+                showNodeContext.call($(found.el).get(0), e);
             }
         });
 
@@ -750,16 +974,16 @@ $(function () {
     });
 
     /** ********************** Context menu ********************** */
-    var collapseAll = function (node) {
-        if (node.el.hasClass(CLS_EXPANDABLE)) {
-            node.el.addClass(CLS_CLOSED).next().hide();
-            for (var i = 0; i < node.children.length; i++) {
+    const collapseAll = function (node) {
+        if (node.el.classList.contains(CLS_EXPANDABLE)) {
+            $(node.el).addClass(CLS_CLOSED).next().hide();
+            for (let i = 0; i < node.children.length; i++) {
                 collapseAll(node.children[i]);
             }
         }
     }
 
-    var onNodeContextMenuSelected = function () {
+    const onNodeContextMenuSelected = function () {
         switch (this.id) {
             case 0: // save png
                 saveFile(selectedNode.name + ".png", selectedNode.imageUrl);
@@ -772,11 +996,11 @@ $(function () {
                 break;
             case 3: // Disable preview
                 selectedNode.disablePreview = true;
-                selectedNode.el.addClass("preview-disabled");
+                selectedNode.el.classList.add("preview-disabled");
                 break;
             case 4: // Enable preview
                 selectedNode.disablePreview = false;
-                selectedNode.el.removeClass("preview-disabled");
+                selectedNode.el.classList.remove("preview-disabled");
                 break;
             case 5: // Collapse all
                 collapseAll(selectedNode);
@@ -792,19 +1016,19 @@ $(function () {
     };
 
     /** ********************** Profile view ********************** */
-    var profileView = async function(node) {
-        var data = await viewController.profileView(node.name);
+    const profileView = async function(node) {
+        let data = await viewController.profileView(node.name);
         data = data.split("\n");
-        var index = 0;
+        let index = 0;
 
         function loadProp(n) {
-            var line = data[index];
+            const line = data[index];
             index++;            
             if (!line || line == "-1 -1 -1" || line.toLocaleLowerCase() == "done.") {
                 return false;
             }
 
-            var times = line.split(" ");
+            const times = line.split(" ");
             n.measureTime = (parseInt(times[0]) / 1000.0) / 1000.0;
             n.layoutTime = (parseInt(times[1]) / 1000.0) / 1000.0;
             n.drawTime = (parseInt(times[2]) / 1000.0) / 1000.0;
@@ -826,7 +1050,7 @@ $(function () {
         const RED_THRESHOLD = 0.8;
         const YELLOW_THRESHOLD = 0.5;
         function addIndicator(el, name, value) {
-            var e = $("<a>").text(name).appendTo(el);
+            const e = $("<a>").text(name).appendTo(el);
             if (value >= RED_THRESHOLD) {
                 e.addClass("red");
             } else if (value >= YELLOW_THRESHOLD) {
@@ -837,27 +1061,27 @@ $(function () {
         }
 
         function setProfileRatings(n) {
-            var N = n.children.length;
+            const N = n.children.length;
             if (N > 1) {
-                var totalMeasure = 0;
-                var totalLayout = 0;
-                var totalDraw = 0;
+                let totalMeasure = 0;
+                let totalLayout = 0;
+                let totalDraw = 0;
                 for (let i = 0; i < N; i++) {
-                    var child = n.children[i];
+                    const child = n.children[i];
                     totalMeasure += child.measureTime;
                     totalLayout += child.layoutTime;
                     totalDraw += child.drawTime;
                 }
                 for (let i = 0; i < N; i++) {
-                    var child = n.children[i];
-                    var el = child.el.find("x-profile").empty().show();
+                    const child = n.children[i];
+                    const el = child.el.find("x-profile").empty().show();
 
                     addIndicator(el, "M", child.measureTime / totalMeasure);
                     addIndicator(el, "L", child.layoutTime / totalLayout);
                     addIndicator(el, "D", child.drawTime / totalDraw);
                 }
             } else if (N == 1) {
-                var child = n.children[0];
+                const child = n.children[0];
                 // Add default
                 child.el.find("x-profile").empty().show()
                     .append($("<a>").text("M"))
@@ -873,10 +1097,10 @@ $(function () {
 
 
     /** ********************** Node search ********************** */
-    var lastNodeSearchText = "";
+    let lastNodeSearchText = "";
     $("#btn-search-node").click(function(e) {
-        var searchInput;
-        var elementFactory = function(el, hideMenu) {
+        let searchInput;
+        const elementFactory = function(el, hideMenu) {
             searchInput = $("<input type=search placeholder='Search node'>").appendTo(el);
 
             // Use key up for enter, so that the user has time to press shift key
@@ -895,24 +1119,21 @@ $(function () {
         showPopup(e, elementFactory);
         searchInput.val(lastNodeSearchText).focus().select();
 
-        var nodeSearch = function (dir) {
-            var query = searchInput.val();
+        const nodeSearch = function (dir) {
+            let query = searchInput.val();
             if (query == "") return;
             lastNodeSearchText = query;
             query = query.toLocaleLowerCase();
 
             // Search through boxes, as nodes might be collapsed.
-            var boxes = $("#border-box div");
-            var nodes = boxes.filter(function() {
-                return $(this).css("display") != "none";
-            }).map(function () {
-                return $(this).data("node").el.get(0);
-            });
+            const boxes = $("#border-box div");
+            const elList = boxes.filter((_, element) => element.style.display != "none")
+                                .map((_, element) => element.node.el)
 
-            var st = nodes.index(selectedNode.el);
-            var count = nodes.length;
+            let st = elList.index(selectedNode.el);
+            const count = elList.length;
 
-            for (var i = -1; i < count; i++) {
+            for (let i = -1; i < count; i++) {
                 st += dir;
                 if (st < 0) {
                     st = count - 1;
@@ -920,9 +1141,9 @@ $(function () {
                 if (st >= count) {
                     st = 0;
                 }
-                if ($(nodes.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
+                if ($(elList.get(st)).text().toLocaleLowerCase().indexOf(query) > -1) {
                     // Found element.
-                    selectNode.call(nodes.get(st));
+                    selectNode.call(elList.get(st));
                     scrollToNode(selectedNode);
                     return;
                 }
@@ -931,21 +1152,21 @@ $(function () {
     });
 
     /** ********************** Custom command ********************** */
-    var ignoreNextKeyUp = false;
+    let ignoreNextKeyUp = false;
 
     $("#btn-custom-command").click(function (e) {
-        var commandInput;
-        var errorContainer;
-        var elementFactory = function(el) {
+        let commandInput;
+        let errorContainer;
+        const elementFactory = function(el) {
             commandInput = $("<input type=search placeholder='Custom command'>").appendTo(el);
             errorContainer = $("<div class='custom-command-error-wrapper'>").appendTo(el);
         }
-        var popup = showPopup(e, elementFactory);
+        const popup = showPopup(e, elementFactory);
 
 
         if (viewMethodList != null) {
             // Setup auto complete
-            var methodAutoComplete = new autoComplete({
+            const methodAutoComplete = new autoComplete({
                 selector: commandInput.get(0),
                 minChars: 1,
                 source: autoCompleteSource,
@@ -974,24 +1195,24 @@ $(function () {
         });
     })
 
-    var executeCommand = function (cmd, errorContainer) {
+    const executeCommand = function (cmd, errorContainer) {
         cmd = cmd.trim();
-        var m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^\)]*)\)\;?$/);
+        const m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^)]*)\);?$/);
 
         if (!m) {
             errorContainer.showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
             return;
         }
 
-        var data = new DataOutputStream();
+        const data = new DataOutputStream();
         data.writeStr(m[1]);
 
         if (m[2].trim() != "") {
-            var params = m[2].split(",");
+            const params = m[2].split(",");
             data.writeInt(params.length);
-            for (var i = 0; i < params.length; i++) {
+            for (let i = 0; i < params.length; i++) {
                 try {
-                    var p = params[i].trim().toLocaleLowerCase();
+                    let p = params[i].trim().toLocaleLowerCase();
 
                     if (p == "false" || p == "true") {
                         // boolean
@@ -1017,63 +1238,55 @@ $(function () {
         viewController.customCommand(selectedNode.name, data.data).catch(errorContainer.showError.bind(errorContainer));
     }
 
-    var viewMethodList = null;
+    let viewMethodList = null;
 
-    var autoCompleteSource = function (term, suggest) {
+    const autoCompleteSource = function (term, suggest) {
         term = term.toLowerCase().trim();
-        var matches = [];
-        for (var i = 0; i < viewMethodList.length; i++) {
+        const matches = [];
+        for (let i = 0; i < viewMethodList.length; i++) {
             if (~viewMethodList[i][0].toLowerCase().indexOf(term)) matches.push(viewMethodList[i]);
         }
         suggest(matches);
     };
 
-    var suggestionRenderer = function (item, search) {
+    const suggestionRenderer = function (item, search) {
         // escape special characters
-        search = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-        var re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
+        search = search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+        const re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
         return '<div class="autocomplete-suggestion" data-val="' + item[0] + '">' + item[0].replace(re, "<b>$1</b>") + "(" + item[1] + ")" + '</div>';
     }
 
-    var loadSuggestions = async function (device) {
+    const loadSuggestions = async function (device) {
         await device.sendFile("/data/local/tmp/methods.jar", "commands/methods.jar");
-        var response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
+        let response = await device.shellCommand("export CLASSPATH=/data/local/tmp/methods.jar;exec app_process /system/bin MethodList");
         response = JSON.parse(response.split("\n", 2)[1]);
         viewMethodList = response;
     };
 
     /** ********************** Main Menu ********************** */
     $("#btn-options").click(function() {
-        var menu = [
+        const menu = [
             {
                 text: "Show hidden node",
                 icon: showHiddenNodes ? "ic_checked" : "ic_unchecked",
                 id: 0
             },
+            null,
             {
                 text: "Dark theme",
                 icon: isDarkTheme() ? "ic_checked" : "ic_unchecked",
                 id: 5
-            },
-            null,
-            {
-                text: "Save hierarchy",
-                icon: "ic_save",
-                id: 1
-            },
-            {
-                text: "Refresh",
-                icon: "ic_refresh",
-                id: 2
             }
         ];
+
         if (!$("#hviewtabs").is(":visible")) {
             // Only show the preview menu when tabs are not available
             menu.unshift({
                 text: "Preview",
                 icon: "ic_submenu",
                 id: 6
-            });
+            },
+            null);
         }
 
         if (viewController.loadScreenshot) {
@@ -1085,14 +1298,25 @@ $(function () {
         }
 
         if (adbDevice && !adbDevice.disconnectedDevice) {
-            menu.push(null, {
-                text: "Disconnect",
-                icon: "ic_disconnect",
-                id: 3
-            })
+            menu.push(null,
+                {
+                    text: "Save hierarchy",
+                    icon: "ic_save",
+                    id: 1
+                },
+                {
+                    text: "Refresh",
+                    icon: "ic_refresh",
+                    id: 2
+                },
+                {
+                    text: "Disconnect",
+                    icon: "ic_disconnect",
+                    id: 3
+                })
         }
 
-        var offset = $(this).offset();
+        const offset = $(this).offset();
         showContext(menu, function (el) {
             switch(this.id) {
                 case 0:
@@ -1124,38 +1348,30 @@ $(function () {
                     switchTheme();
                     break;
                 case 6:
-                    var submenuOffset = el.addClass(CLS_SELECTED).offset();
+                    const submenuOffset = $(el).addClass(CLS_SELECTED).offset();
                     showPreviewContext({pageX: submenuOffset.left + el.width() / 2, pageY: submenuOffset.top + el.height() / 4})
-                    return true;    // Dont ide te existing popup
+                    return true;    // Don't ide te existing popup
             }
         },
         {pageX: offset.left, pageY: offset.top});
     });
 
-    var currentPreviewMode = 3;
-    var showPreviewContext = function(e) {
-        var menu = [
-            {
-                text: "Grid",
-                icon: currentPreviewMode == 0 ? "ic_checked" : "ic_unchecked",
-                id: 0
-            },
-            {
-                text: "Image",
-                icon: currentPreviewMode == 1 ? "ic_checked" : "ic_unchecked",
-                id: 1
-            },
-            {
-                text: "Both",
-                icon: currentPreviewMode == 2 ? "ic_checked" : "ic_unchecked",
-                id: 2
-            },
-            {
-                text: "App",
-                icon: currentPreviewMode == 3 ? "ic_checked" : "ic_unchecked",
-                id: 3
-            }
-        ];
+    function buildPreviewMenuItem(id, text) {
+        return {
+            text: text,
+            icon: currentPreviewMode == id ? "ic_checked" : "ic_unchecked",
+            id: id
+        }
+    }
+
+    let currentPreviewMode = 3;
+    const showPreviewContext = function(e) {
+        const menu = [ buildPreviewMenuItem(0, "Grid") ]
+        if (!viewController.hasNoImage) {
+            menu.push(null, buildPreviewMenuItem(1, "Image"), null, buildPreviewMenuItem(2, "Both"))
+        }
+        menu.push(null, buildPreviewMenuItem(3, "App"))
+
         showContext(menu, function () {
             switch (this.id) {
                 case 0:  // only grid
@@ -1180,21 +1396,21 @@ $(function () {
     $("#sshot-tab").bind("contextmenu", showPreviewContext);
 
     /** ********************** Show/hide hidden nodes ********************** */
-    // Hides the hode and all its children recursively.
-    var hideNode = function (node, hide) {
-        hide = hide || !node.isVisible;
+    // Hides the node and all its children recursively.
+    const hideNode = function (node, hide) {
+        hide = hide || !node.isVisible
         if (hide) {
-            node.box.hide();
-            node.el.hide();
+            node.box.style.display = "none"
+            node.el.style.display = "none"
         }
         if (node.children.length) {
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 hideNode(node.children[i], hide);
             }
         }
     }
 
-    var showHiddenNodeOptionChanged = function () {
+    const showHiddenNodeOptionChanged = function () {
         if (showHiddenNodes) {
             $("#vlist_content label, #border-box div").show();
         } else {
@@ -1203,9 +1419,9 @@ $(function () {
     }
 
     /** ********************** Save hierarchy ********************** */
-    var saveHierarchy = async function () {
-        var zip = new JSZip();
-        var config = {
+    const saveHierarchy = async function () {
+        const zip = new JSZip();
+        const config = {
             version: 1,
             title: currentAppInfo.name,
             density: viewController.density,
@@ -1215,21 +1431,21 @@ $(function () {
         zip.file("config.json", JSON.stringify(config));
         zip.file("hierarchy.txt", searializeNode(currentRootNode));
 
-        var imgFolder = zip.folder("img");
+        const imgFolder = zip.folder("img");
 
-        var loaders = {};
+        const loaders = {};
         function loadImagesRecur(node) {
             if (node.imageUrl) {
                 loaders[node.name + ".png"] = doXhr(node.imageUrl, 'arraybuffer');
             }
 
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 loadImagesRecur(node.children[i]);
             }
         }
         loadImagesRecur(currentRootNode);
 
-        for (let name in loaders) {
+        for (const name in loaders) {
             if (loaders[name]) {
                 try {
                     imgFolder.file(name, await loaders[name], { binary: true });

@@ -16,7 +16,7 @@ const ADB_INTERFACE_CLASS = 255;
 const ADB_INTERFACE_SUB_CLASS = 66;
 const ADB_INTERFACE_PROTOCOL = 1;
 
-var ADB_DEVICE_FILTER = {
+const ADB_DEVICE_FILTER = {
     classCode: ADB_INTERFACE_CLASS,
     subclassCode: ADB_INTERFACE_SUB_CLASS,
     protocolCode: ADB_INTERFACE_PROTOCOL
@@ -61,8 +61,8 @@ function AdbDevice(device, interface) {
     this.version = VERSION;
     this._sendMutex = new Mutex();
 
-    var eps = interface.alternates[0].endpoints;
-    for (var i = 0; i < eps.length; i++) {
+    const eps = interface.alternates[0].endpoints;
+    for (let i = 0; i < eps.length; i++) {
         if (eps[i].direction == "out") {
             this.outEndPoint = eps[i].endpointNumber;
         } else if (eps[i].direction == "in") {
@@ -106,11 +106,11 @@ AdbDevice.prototype._sendSinglePacketMessage = async function (command, arg0, ar
  * data: Uint8Array
  */
 AdbDevice.prototype._sendMessage = async function (command, arg0, arg1, data) {
-    if (!!this.readyDeferred.length) {
+    if (this.readyDeferred.length) {
         await Promise.resolve(this.readyDeferred[this.readyDeferred.length - 1]);
     }
     // Send packets serially, otherwise headers might get mixed up
-    let sendLock = await this._sendMutex.lock();
+    const sendLock = await this._sendMutex.lock();
     try {
         if (PROTOCOL_DEBUG) console.debug("Sending ", commandMap[command], arg0, arg1);
         if (!data) {
@@ -133,7 +133,7 @@ AdbDevice.prototype._sendMessage = async function (command, arg0, arg1, data) {
 }
 
 AdbDevice.prototype._readData = async function (length) {
-    var result = await this.device.transferIn(this.inEndPoint, length);
+    const result = await this.device.transferIn(this.inEndPoint, length);
 
     if (result.status === 'ok') {
         const view = result.data;
@@ -145,10 +145,10 @@ AdbDevice.prototype._readData = async function (length) {
 
 AdbDevice.prototype._doReadLoop = async function () {
     try {
-        var headerData = await this._readData(ADB_MESSAGE_HEADER_LENGTH);
+        const headerData = await this._readData(ADB_MESSAGE_HEADER_LENGTH);
         const header = parseAndVerifyAdbMessageHeader(headerData);
         if (header.data_length > 0) {
-            var data = await this._readData(header.data_length);
+            const data = await this._readData(header.data_length);
             if (this.version != VERSION_SKIP_CHECKSUM) {
                 verifyAdbMessageData(header, data);
             }
@@ -163,7 +163,7 @@ AdbDevice.prototype._doReadLoop = async function () {
 }
 
 AdbDevice.prototype._resolveDeferred = function(localId, remoteId) {
-    for (var i = 0; i < this.readyDeferred.length; i++) {
+    for (let i = 0; i < this.readyDeferred.length; i++) {
         if (this.readyDeferred[i].data == localId) {
             this.readyDeferred.splice(i, 1)[0].accept(remoteId);
             return true;
@@ -195,7 +195,7 @@ AdbDevice.prototype._handleMessage = function (header, data) {
         case OKAY_COMMAND: {
             const localId = header.arg0;
             const remoteId = header.arg1;
-            if (!!this.readyDeferred.length) {
+            if (this.readyDeferred.length) {
                 this._resolveDeferred(remoteId, localId);
             } else if (!this._findStream(remoteId, localId)) {
                 this._sendMessage(CLSE_COMMAND, remoteId, localId);
@@ -234,10 +234,8 @@ AdbDevice.prototype._handleMessage = function (header, data) {
                     break;
                 case AUTH_TYPE_SIGNATURE:
                     throw new Error('auth signature not implemented');
-                    break;
                 case AUTH_TYPE_RSAPUBLICKEY:
                     throw new Error('auth rsapublickey not implemented');
-                    break;
                 default:
                     throw new Error(`Unknown auth command type: ${authType}`);
             }
@@ -270,14 +268,14 @@ AdbDevice.prototype._onReceiveAuthToken = async function (data) {
     this._setState(STATE_UNAUTHORIZED);
     console.info('received adb auth token');
 
-    if (!!this.key.fullKey) {
+    if (this.key.fullKey) {
         const signature = await this.key.sign(data);
         // Clear the private key so that next time we generate a new public key
         this.key.fullKey = null;
         this._sendMessage(AUTH_COMMAND, AUTH_TYPE_SIGNATURE, 0, signature);
     } else {
         // Generate and save a new signature
-        var pk = await this.key.publicKey();
+        const pk = await this.key.publicKey();
         this._sendMessage(AUTH_COMMAND, AUTH_TYPE_RSAPUBLICKEY, 0, stringToByteArray(pk + "\0"));
     }
 }
@@ -311,7 +309,7 @@ AdbStream.prototype.write = async function (data) {
         data = stringToByteArray(data);
     }
     this.device._sendMessage(WRTE_COMMAND, this.localId, this.remoteId, data);
-    var ok = deferred(this.localId);
+    const ok = deferred(this.localId);
     this.device.readyDeferred.push(ok);
     return ok;
 }
@@ -341,7 +339,7 @@ AdbStream.prototype.onReceiveWrite = function (data) {
     }
     if (!this.pending.length) return;
     if (this.pendingCallback) {
-        var callback = this.pendingCallback;
+        const callback = this.pendingCallback;
         this.pendingCallback = null;
         this.read(this.pendingLength, callback);
     }
@@ -349,19 +347,19 @@ AdbStream.prototype.onReceiveWrite = function (data) {
 
 AdbStream.prototype.read = function (length, callback) {
     this.pendingLength = length;
-    var result = null;
-    var totalRead = 0;
+    let result = null;
+    let totalRead = 0;
     while (this.pending.length) {
-        var entry = this.pending.shift();
+        let entry = this.pending.shift();
         if (!this.pendingLength) {
             result = entry;
             break
         }
-        var remaining = this.pendingLength - totalRead;
+        const remaining = this.pendingLength - totalRead;
         if (entry.byteLength > remaining) {
             // Add back extra bytes
-            var tmp = entry.subarray(0, remaining);
-            var extra = entry.subarray(remaining);
+            const tmp = entry.subarray(0, remaining);
+            const extra = entry.subarray(remaining);
             this.pending.unshift(extra);
             entry = tmp;
         }
@@ -387,7 +385,7 @@ AdbStream.prototype.sendReady = function () {
 }
 
 AdbStream.prototype.readAll = function (responseMerger) {
-    var result = deferred();
+    const result = deferred();
 
     if (!responseMerger) {
         responseMerger = new TextResponseMerger();
@@ -425,8 +423,8 @@ ByteResponseMerger.prototype.merge = function (data) {
 }
 
 AdbDevice.prototype.openStream = function (command) {
-    var localId = this.nextLocalId++;
-    var stream = new AdbStream(this, localId);
+    const localId = this.nextLocalId++;
+    const stream = new AdbStream(this, localId);
     if (PROTOCOL_DEBUG) console.debug("Opening stream", command, localId);
     this.streams[localId] = stream;
     this._sendMessage(OPEN_COMMAND, localId, 0, stringToByteArray(command + "\0"));
@@ -440,7 +438,7 @@ AdbDevice.prototype.shellCommand = function (command) {
 
 AdbDevice.prototype.closeAll = function () {
     console.log("Closing all");
-    for (var i = 0; i < this.streams.length; i++) {
+    for (let i = 0; i < this.streams.length; i++) {
         if (this.streams[i]) {
             this.streams[i].onClose = null;
             this.streams[i].close();
@@ -458,13 +456,13 @@ AdbDevice.prototype.disconnect = function() {
 }
 
 AdbDevice.prototype.sendFile = async function (targetPath, sourcePath) {
-    var data = await doXhr(sourcePath, "arraybuffer");
-    var stream = this.openStream("sync:");
+    let data = await doXhr(sourcePath, "arraybuffer");
+    const stream = this.openStream("sync:");
 
     // Send request
-    var out = new DataOutputStream();
+    let out = new DataOutputStream();
     out.highFirst = false;
-    var path = new Uint8Array(stringToByteArray(targetPath + ",0755"));
+    const path = new Uint8Array(stringToByteArray(targetPath + ",0755"));
     out.writeBytes(new Uint8Array(stringToByteArray("SEND")));
     out.writeInt(path.length);
     out.writeBytes(path);
@@ -472,7 +470,7 @@ AdbDevice.prototype.sendFile = async function (targetPath, sourcePath) {
 
     // File data
     // TODO: Handle large files in 64k chunks
-    var data = new Uint8Array(data);
+    data = new Uint8Array(data);
     out = new DataOutputStream();
     out.highFirst = false;
     out.writeBytes(new Uint8Array(stringToByteArray("DATA")));
@@ -487,12 +485,12 @@ AdbDevice.prototype.sendFile = async function (targetPath, sourcePath) {
     out.writeInt(0);
     stream.write(new Uint8Array(out.data));
 
-    var response = deferred();
+    const response = deferred();
     stream.read(4, function (data) {
         response.accept(ab2str(data));
     });
 
-    var okay = await response;
+    const okay = await response;
     stream.close();
     if ("OKAY" != okay) {
         throw "Transfer failer";
