@@ -14,7 +14,7 @@
 
 function createJmuxPlayer(container) {
     console.log("Using jmuxplayer");
-    var ret = {
+    const ret = {
         el: $("<video autoplay>").appendTo(container)
     };
 
@@ -25,7 +25,7 @@ function createJmuxPlayer(container) {
         ret.onMetadata();
     });
 
-    var jmuxer = new JMuxer({
+    const jmuxer = new JMuxer({
         node: ret.el.get(0),
         mode: 'video',
         debug: false,
@@ -41,7 +41,7 @@ function createJmuxPlayer(container) {
     ret.resize(0, 0);
 
     ret.feed = function(data) {
-        var firstFrame = jmuxer.kfCounter <= 0;
+        const firstFrame = jmuxer.kfCounter <= 0;
         jmuxer.feed({video: data});
         if (firstFrame && jmuxer.kfCounter > 0) {
             ret.onFirstFrame();
@@ -57,19 +57,19 @@ function createDecoderPlayer(container) {
     const SPS = 7;
     const PPS = 8;
 
-    var ret = {
+    const ret = {
         el: $("<canvas>").appendTo(container)
     };
     ret.onFirstFrame = () => { };
     ret.onMetadata = () => { };
 
-    var canvas = ret.el.get(0);
-    var ctx = canvas.getContext('2d');
+    const canvas = ret.el.get(0);
+    const ctx = canvas.getContext('2d');
 
-    var lastFrame = null;
+    let lastFrame = null;
 
     async function onFrame(frame) {
-        var isFirst = lastFrame == null;
+        const isFirst = lastFrame == null;
         if (lastFrame != null) {
             lastFrame.close();
         }
@@ -81,7 +81,7 @@ function createDecoderPlayer(container) {
 
         ctx.drawImage(frame, 0, 0, canvas.width, canvas.height);
     }
-    let decoder = new VideoDecoder({
+    const decoder = new VideoDecoder({
         output: onFrame,
         error: e => console.error(e),
     });
@@ -103,14 +103,14 @@ function createDecoderPlayer(container) {
         this.type = data[0] & 0x1f;
     }
 
-    var pendingFrames = [];
-    var pendingBytes = null;
-    var configPending = true;
+    let pendingFrames = [];
+    let pendingBytes = null;
+    let configPending = true;
 
     function createConfig(header) {
         // Create description:
-        var sps = header.sps[0].data;
-        var pps = header.pps[0].data;
+        const sps = header.sps[0].data;
+        const pps = header.pps[0].data;
         return {
             codec: 'avc1.' + new DataView(sps.buffer, sps.byteOffset).getUint32(0).toString(16).substr(-6),
             description: Uint8Array.from(
@@ -126,11 +126,11 @@ function createDecoderPlayer(container) {
             buffer = appendBuffer(pendingBytes, buffer);
         }
 
-        var dv = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-        var len = buffer.byteLength - 4;
+        const dv = new DataView(buffer.buffer, buffer.byteOffset, buffer.byteLength);
+        const len = buffer.byteLength - 4;
         let endPos, lastPos = 0;
 
-        for (var i = 0; i < len; i++) {
+        for (let i = 0; i < len; i++) {
             if ((dv.getUint32(i) >> 8) == 1) {
                 endPos = i;
                 if (i > 0 && buffer[i - 1] == 0) {
@@ -146,18 +146,18 @@ function createDecoderPlayer(container) {
         pendingBytes = buffer.subarray(lastPos);
     }
 
-    var frameeNo = 0;
+    let frameeNo = 0;
 
     ret.feed = function(data) {
         parseNALu(data);
 
         if (configPending) {
-            var header = {
+            const header = {
                 sps: [],
                 pps: [],
                 ready: false
             }
-            for (var i = 0; i < pendingFrames.length; i++) {
+            for (let i = 0; i < pendingFrames.length; i++) {
                 switch (pendingFrames[i].type) {
                     case SPS:
                         header.sps.push(pendingFrames[i]);
@@ -180,18 +180,18 @@ function createDecoderPlayer(container) {
             return;
         }
 
-        var pendingPayload = null;
-        for (var i = 0; i < pendingFrames.length; i++) {
-            var push = false;
-            var isKey = false;
+        let pendingPayload = null;
+        for (let i = 0; i < pendingFrames.length; i++) {
+            let push = false;
+            let isKey = false;
             switch (pendingFrames[i].type) {
                 case IDR:
                 case NDR:
                     push = true;
                 case SPS:
                 case PPS: {
-                    var data = pendingFrames[i].data;
-                    var load = new Uint8Array(4 + data.byteLength);
+                    const data = pendingFrames[i].data;
+                    const load = new Uint8Array(4 + data.byteLength);
                     new DataView(load.buffer).setUint32(0, data.byteLength);
                     load.set(data, 4);
 
@@ -201,7 +201,7 @@ function createDecoderPlayer(container) {
                 }
             }
             if (push) {
-                var chunk = new EncodedVideoChunk({
+                const chunk = new EncodedVideoChunk({
                     type: isKey ? "key" : "delta",
                     timestamp: (frameeNo++) * 16,
                     duration: 16,
@@ -216,17 +216,17 @@ function createDecoderPlayer(container) {
     return ret;
 }
 
-var deviceMirrorAction = async function() {
+const deviceMirrorAction = async function() {
     $("#main-progress").show();
     $("#device-list-content").empty().hide();
     $("#darkThemeSwitch").remove();
     $("#dmirrorview").removeClass("hide").removeClass("hidden");
 
-    var player = window.VideoDecoder ? createDecoderPlayer("#dmirrorview .frame") : createJmuxPlayer("#dmirrorview .frame");
+    const player = window.VideoDecoder ? createDecoderPlayer("#dmirrorview .frame") : createJmuxPlayer("#dmirrorview .frame");
 
     resetActiveState();
-    var inputChannelRunning = true;
-    var videoSizeFactor = 1;
+    let inputChannelRunning = true;
+    let videoSizeFactor = 1;
 
     ActiveState.push(function () {
         inputChannelRunning = false;
@@ -236,7 +236,7 @@ var deviceMirrorAction = async function() {
 
     async function startInputChannel() {
         await adbDevice.sendFile("/data/local/tmp/inputserver.jar", "commands/inputserver.jar");
-        var stream;
+        let stream;
         function loopStream() {
             stream = adbDevice.openStream(`shell:export CLASSPATH=/data/local/tmp/inputserver.jar;exec app_process /system/bin InputServer`);
             stream.onReceiveWrite = r => stream.sendReady();
@@ -255,9 +255,9 @@ var deviceMirrorAction = async function() {
             const offsetX = player.el.offset().left;
             const offsetY = player.el.offset().top;
 
-            var sendEvent = function(code, ev) {
-              var x = Math.round((ev.pageX - offsetX) * width);
-              var y = Math.round((ev.pageY - offsetY) * height);
+            const sendEvent = function(code, ev) {
+              const x = Math.round((ev.pageX - offsetX) * width);
+              const y = Math.round((ev.pageY - offsetY) * height);
               stream.write(`me:${code}:${x}:${y}:${Date.now()}\n`)
             }
 
@@ -272,8 +272,8 @@ var deviceMirrorAction = async function() {
         });
 
         // Map for javascript keycodes to android key codes
-        var keyMap = {};
-        var addKeyMap = function(jCode, aCode, length) {
+        const keyMap = {};
+        const addKeyMap = function(jCode, aCode, length) {
             for (let i = 0; i < length; i++) {
                 keyMap[jCode + i] = aCode + i;
             }
@@ -312,7 +312,7 @@ var deviceMirrorAction = async function() {
 
         $(document).bind("keydown keyup", function(e) {
             if (!keyMap[e.which]) return;
-            var code = keyMap[e.which];
+            let code = keyMap[e.which];
             if (code.length) {
                 if (e.originalEvent) {
                     code = code[e.originalEvent.location - 1];
@@ -321,16 +321,16 @@ var deviceMirrorAction = async function() {
                     code = keyMap[e.which][0];
                 }
             }
-            var response = `ke:${e.type == 'keydown' ? 'd' : 'u'}:${e.altKey ? 1 : 0}:${e.ctrlKey ? 1 : 0}:${e.metaKey ? 1 : 0}:${e.shiftKey ? 1 : 0}:${code}\n`;
+            const response = `ke:${e.type == 'keydown' ? 'd' : 'u'}:${e.altKey ? 1 : 0}:${e.ctrlKey ? 1 : 0}:${e.metaKey ? 1 : 0}:${e.shiftKey ? 1 : 0}:${code}\n`;
             stream.write(response)
             e.preventDefault();
         });
     }
 
     player.onMetadata = function() {
-        var maxW = $("#dmirrorview").width() - 40;
-        var maxH = $("#dmirrorview").height() - 40;
-        var s = Math.max(player.videoWidth() / maxW, player.videoHeight() / maxH);
+        const maxW = $("#dmirrorview").width() - 40;
+        const maxH = $("#dmirrorview").height() - 40;
+        const s = Math.max(player.videoWidth() / maxW, player.videoHeight() / maxH);
         player.resize(player.videoWidth() / s, player.videoHeight() / s);
     }
     $(window).resize(player.onMetadata);
@@ -342,11 +342,11 @@ var deviceMirrorAction = async function() {
     }
 
     // Get device size
-    var sizeArg = "";
-    var size = /\b(\d+)x(\d+)\b/.exec(await adbDevice.shellCommand("wm size"));
+    let sizeArg = "";
+    const size = /\b(\d+)x(\d+)\b/.exec(await adbDevice.shellCommand("wm size"));
     if (size) {
-        var w = Math.round(parseInt(size[1]) / 2);
-        var h = Math.round(parseInt(size[2]) / 2);
+        const w = Math.round(parseInt(size[1]) / 2);
+        const h = Math.round(parseInt(size[2]) / 2);
         sizeArg = ` --size=${w}x${h}`;
         videoSizeFactor = 2;
     }
@@ -356,7 +356,7 @@ var deviceMirrorAction = async function() {
             return;
         }
         console.log("Connecting to device stream");
-        var stream = adbDevice.openStream(`shell:screenrecord ${sizeArg} --output-format=h264 - `);
+        const stream = adbDevice.openStream(`shell:screenrecord ${sizeArg} --output-format=h264 - `);
         stream.onReceiveWrite = function (result) {
             stream.sendReady();
             player.feed(result);

@@ -103,13 +103,18 @@
     background-image: none !important;
 }
 
-#border-box div.hover {
-    box-shadow: 0 0 0 1px #0277BD inset;
+#border-box div:is(.hover, .hover.selected, .hover.last_selected) {
+    box-shadow: 0 0 0 1px var(--under-cursor-color) inset;
     z-index: 2000;
 }
 
 #border-box div.selected {
-    box-shadow: 0 0 0 1px #F44336 inset;
+    box-shadow: 0 0 0 1px var(--selected-color) inset;
+    z-index: 1000;
+}
+
+#border-box div.last_selected {
+    box-shadow: 0 0 0 1px var(--last-selected-color) inset;
     z-index: 1000;
 }
 
@@ -276,13 +281,13 @@
     box-shadow: inset 0 0 100px 100px rgba(0, 0, 0, 0.2);
 }
 
-.frame {
-    background: var(--card-bg-color);
-    box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
-    border-radius: var(--corner);
+.constituent {
     box-sizing: border-box;
     flex-direction: column;
     display: flex;
+    background: var(--card-bg-color);
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: var(--corner);
 }
 
 .colorwell {
@@ -387,7 +392,7 @@ x-profile a.red {
 
     #vlist {
         left:0px !important;
-        top: 40px !important;
+        top: 0px !important;
         right: 0px !important;
         bottom: 0px !important;
     }
@@ -405,6 +410,7 @@ x-profile a.red {
         bottom: 0px !important;
         height: auto !important;
         right: 0px !important;
+        left: 0px !important;
         box-shadow: none;
     }
 
@@ -439,3 +445,29 @@ x-profile a.red {
         margin: 0 10px 0 0;
     }
   }
+
+#left-panel-divider.visible {
+    height: 10px;
+}
+
+#left-panel-divider.hidden {
+    height: 0px;
+    display:none;
+}
+
+#tl-range-container.visible {
+    height: 20px;
+}
+
+#tl-range-container.hidden {
+    height: 0px;
+    display:none;
+}
+
+#vlist.multi-page {
+    bottom: 30px !important;
+}
+
+#border-box.multi-page {
+    box-shadow: 0 0 0 1px black !important;
+}

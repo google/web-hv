@@ -13,7 +13,7 @@
 // limitations under the License.
 
 
-var INT_MIN_VALUE = -2147483648;
+const INT_MIN_VALUE = -2147483648;
 
 function VN_Property(fullname) {
     this.name = fullname;
@@ -21,9 +21,9 @@ function VN_Property(fullname) {
     this.type = "Uncategorized";
     this.fullname = fullname;
 
-    var colonIndex = fullname.indexOf(':');
+    const colonIndex = fullname.indexOf(':');
     if (colonIndex > 0) {
-        var type = fullname.substring(0, colonIndex);
+        const type = fullname.substring(0, colonIndex);
         this.type = type.charAt(0).toUpperCase() + type.slice(1);
         this.name = fullname.substring(colonIndex + 1);
     }
@@ -43,7 +43,7 @@ function ViewNode(name) {
 }
 
 ViewNode.prototype.getBoolean = function(name, dValue) {
-    var p = this.getProp(name);
+    const p = this.getProp(name);
     if (p) {
         return p.value == 'true';
     }
@@ -52,7 +52,7 @@ ViewNode.prototype.getBoolean = function(name, dValue) {
 
 
 ViewNode.prototype.getInt  = function(name, dValue) {
-    var p = this.getProp(name);
+    const p = this.getProp(name);
     if (p) {
         try {
             return parseInt(p.value);
@@ -62,21 +62,13 @@ ViewNode.prototype.getInt  = function(name, dValue) {
 }
 
 ViewNode.prototype.getFloat  = function(name, dValue) {
-    var p = this.getProp(name);
+    const p = this.getProp(name);
     if (p) {
         try {
             return parseFloat(p.value);
         } catch(e) {}
     }
     return dValue;
-}
-
-ViewNode.prototype.updateNodeDrawn = function() {
-    this.nodeDrawn = !this.willNotDraw;
-    for (var i = 0; i < this.children.length; i++) {
-        this.children[i].updateNodeDrawn();
-        this.nodeDrawn |= (this.children[i].nodeDrawn && this.children[i].isVisible);
-    }
 }
 
 ViewNode.prototype.sortProperties = function() {
@@ -110,12 +102,12 @@ ViewNode.prototype.loadCommonProperties = function(map) {
     this.willNotDraw = this.getBoolean("willNotDraw", false);
 
     this.clipChildren = this.getBoolean("clipChildren", true);
-    this.translateX = this.getFloat("translationX", 0);
-    this.translateY = this.getFloat("translationY", 0);
+    this.translationX = this.getFloat("translationX", 0);
+    this.translationY = this.getFloat("translationY", 0);
     this.scaleX = this.getFloat("scaleX", 1);
     this.scaleY = this.getFloat("scaleY", 1);
 
-    var descProp = this.getProp("contentDescription");
+    let descProp = this.getProp("contentDescription");
     this.contentDesc = descProp != null && descProp.value && descProp.value != "null"
         ? descProp.value : null;
 
@@ -125,8 +117,8 @@ ViewNode.prototype.loadCommonProperties = function(map) {
             ? descProp.value : null;
     }
 
-    var visibility = this.getProp("visibility");
-    this.isVisible = !visibility || visibility.value == 0 || visibility.value == "VISIBLE";
+    this.visibility = this.getProp("visibility").value;
+    this.isVisible = !this.visibility || this.visibility.value == 0 || this.visibility.value == "VISIBLE";
 
     delete this.getProp;
 }
