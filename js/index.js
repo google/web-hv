@@ -117,12 +117,13 @@ function handleSelectDevice(devicePromise) {
 
 let adbDevice;
 
-async function openAndClaim(device) {
-	console.debug("Opening device", device);
+async function openDevice(device) {
+	await device.close();
 	await device.open();
-	await device.selectConfiguration(1);
 
-	// Find interface
+	if (!device.configuration) {
+		await device.selectConfiguration(1);
+	}
 	let interface = null;
 	const interfaces = device.configuration.interfaces;
 	for (let i = 0; i < interfaces.length; i++) {
@@ -135,29 +136,29 @@ async function openAndClaim(device) {
 		}
 		interface = null;
 	}
-
 	if (interface == null) {
 		throw "No interface found";
 	}
+	await device.claimInterface(interface.interfaceNumber);
+	return interface;
+}
 
-	try {
-		await device.claimInterface(interface.interfaceNumber);
-	} catch(e) {
-		console.log("Device is use, trying reset");
-		await device.reset();
+async function openAndClaim(device) {
+	console.debug("Opening device", device);
+
+	let interface = null;
+	for (let i = 0; i < 3 && interface == null; i++) {
 		try {
-			await device.claimInterface(interface.interfaceNumber);
-		} catch (e) {
-			console.log("Reset pending, waiting some time");
-			await new Promise(r => setTimeout(r, 500));
-
-			try {
-				await device.claimInterface(interface.interfaceNumber);
-			} catch (e) {
-				await new Promise(r => setTimeout(r, 500));
-				await device.claimInterface(interface.interfaceNumber);
-			}
+			interface = await openDevice(device);
+		} catch(e) {
+			console.log("Device is use, trying reset");
+			await new Promise(r => setTimeout(r, i * 500 + 500));
+			device.reset();
+			interface = null;
 		}
+	}
+	if (interface == null) {
+		throw "Unable to claim device"
 	}
 
 	$(window).on('beforeunload', function () {

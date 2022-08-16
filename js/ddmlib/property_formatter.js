@@ -41,6 +41,7 @@ PROPERTY_TYPE_MAP.set("left", LAYOUT_TYPE)
 PROPERTY_TYPE_MAP.set("top", LAYOUT_TYPE)
 PROPERTY_TYPE_MAP.set("width", LAYOUT_TYPE)
 PROPERTY_TYPE_MAP.set("height", LAYOUT_TYPE)
+PROPERTY_TYPE_MAP.set("elevation", LAYOUT_TYPE)
 PROPERTY_TYPE_MAP.set("scrollX", SCROLLING_TYPE)
 PROPERTY_TYPE_MAP.set("scrollY", SCROLLING_TYPE)
 PROPERTY_TYPE_MAP.set("translationX", DRAWING_TYPE)
@@ -112,6 +113,8 @@ const formatProperties = function(root /* ViewNode */) {
                     node.properties.push(property)
                 }
             }
+
+            node.properties.sort((a, b) => PROPERTY_TYPE_MAP.get(a.name).localeCompare(PROPERTY_TYPE_MAP.get(b.name)))
         }
         node.namedProperties = {};
         for (let i = 0; i < node.properties.length; i++) {
