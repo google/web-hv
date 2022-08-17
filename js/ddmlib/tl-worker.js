@@ -14,18 +14,31 @@
 
 importScripts("property_formatter.js")
 importScripts("../../third_party/protobuf.min.js")
+importScripts("../../third_party/pako/pako_inflate.min.js")
 importScripts("viewnode.js")
+importScripts("../constants.js")
 
 let rootNodes /* ViewNode[] */
 let formattingIndex = 0
+let classNames /* string[] */
 
 self.onmessage = function(event) {
     if (rootNodes == null) {
-        protobuf.load("../../protos/view_capture.proto").then(function(root) {
-            rootNodes = root.lookupType("com.android.launcher3.view.ExportedData")
-                            .decode(event.data.tlHvDataAsBinaryArray)
-                            .frameData
-                            .map(f => f.node)
+        let protoData = event.data.tlHvDataAsBinaryArray;
+        let protoFile;
+        if (event.data.type == TYPE_TIME_LAPSE_BUG_REPORT) {
+            protoFile =  "../../protos/view_capture.proto";
+            protoData = pako.inflate(protoData);
+        } else {
+            protoFile = "../../protos/view_capture_deprecated.proto";
+        }
+        protobuf.load(protoFile).then(function(root) {
+            let parsedProto = root
+                .lookupType("com.android.launcher3.view.ExportedData")
+                .decode(protoData);
+
+            rootNodes = parsedProto.frameData.map(f => f.node)
+            classNames = parsedProto.classname;
             postMessage({ frameCount: rootNodes.length })
             formatNextNode()
         })
@@ -48,7 +61,7 @@ function sendNodeToUiThread(processedIndex) {
    sent from the main thread request an additional formatted node to process. */
 function formatNextNode() {
     if (formattingIndex < rootNodes.length) {
-        formatProperties(rootNodes[formattingIndex])
+        formatProperties(rootNodes[formattingIndex], classNames)
         setTimeout(formatNextNode, 1, ++formattingIndex)    
     }
 }

@@ -32,7 +32,7 @@ const activityListAction = function (initializer) {
             activityListAction(initializer);
         };
 
-        if (info.type == TYPE_TIME_LAPSE_BUG_REPORT) {
+        if (info.type == TYPE_TIME_LAPSE_BUG_REPORT || info.type == TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED) {
             tlHvAction(info)
         } else {
             hViewAction(info);

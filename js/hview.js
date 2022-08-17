@@ -755,7 +755,7 @@ $(function () {
             w.onmessage = processRootNode
             w.postMessage({ processedIndex: processedIndex })
         }
-        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
+        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data, type: appInfo.type });
 
         function hasDifferentProperties(node /* ViewNode!! */, other /* ViewNode!! */) {
             return node.id != other.id
