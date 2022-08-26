@@ -72,14 +72,6 @@ $(function () {
 	if (isDarkTheme()) {
 		switchTheme();
 	}
-
-	// Check url hash
-	const urlParams = new URLSearchParams(window.location.search);
-	if (urlParams.get("mode") == "mirror") {
-		// Switch to mirror mode
-		$("#main-title-wrapper").html("<h2>Mirror android screen</h2>");
-		activityListAction = deviceMirrorAction;
-	}
 })
 
 function refreshConnectedDevices() {

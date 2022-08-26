@@ -104,7 +104,7 @@ async function loadBugFile(bugFile, list) {
         },
         {
             key: "timelapse",
-            header: " ContinuousViewCapture:",
+            header: "ContinuousViewCapture:",
             titleRegX: /^\s+window ([^\:\s]+):/,
             titleGroups: {
                 hashCode: 2,
@@ -119,12 +119,18 @@ async function loadBugFile(bugFile, list) {
     ]
 
     // Parses a list of sections
-    function parseSectionList(parsingEntry) {
+    function parseSectionList(parsingEntry, spacesLength) {
         let match;
         const result = [];
 
+        let spaces = " ";
+        for (let i = 1; i < spacesLength; i++) {
+            spaces += " ";
+        }
+
+
         let lastSection = null;
-        while(liner.peek() != null && liner.peek().startsWith(" ")) {
+        while(liner.peek() != null && liner.peek().startsWith(spaces)) {
             const line = liner.next();
             if (match = parsingEntry.titleRegX.exec(line)) {
                 if (lastSection != null) {
@@ -164,8 +170,8 @@ async function loadBugFile(bugFile, list) {
             })
         } else {
             PARSING_DATA.forEach(p => {
-                if (p.header == line) {
-                    const r = parseSectionList(p);
+                if (p.header == line.trim()) {
+                    const r = parseSectionList(p, line.indexOf(p.header));
                     if (!parseData[p.key]) {
                         parseData[p.key] = [];
                     }
