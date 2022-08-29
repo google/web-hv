@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.0.3'
+        classpath 'com.android.tools.build:gradle:7.1.0'
     }
 }
 
@@ -13,8 +13,8 @@ apply plugin: 'com.android.library'
 // Use  the  following command to compile the jar file:
 // d8 <.class files> --min-api 24 --release --output <output.jar>
 android {
-    compileSdkVersion 31
-    buildToolsVersion "33.0.0-rc2"
+    compileSdkVersion "android-31"
+    buildToolsVersion "31.0.0"
 
     defaultConfig {
         minSdk 28
@@ -25,7 +25,6 @@ android {
 
     sourceSets {
         main {
-            java.srcDirs = ['src']
             manifest.srcFile 'AndroidManifest.xml'
         }
     }
@@ -41,5 +40,13 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+allprojects {
+    repositories {
+        mavenCentral()
+        google()
+        jcenter()
     }
 }

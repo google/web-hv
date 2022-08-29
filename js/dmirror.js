@@ -217,6 +217,7 @@ function createDecoderPlayer(container) {
 }
 
 const deviceMirrorAction = async function() {
+    backStack.add("?mode=mirror");
     $("#main-progress").show();
     $("#device-list-content").empty().hide();
     $("#darkThemeSwitch").remove();

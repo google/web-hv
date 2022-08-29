@@ -13,11 +13,14 @@
 // limitations under the License.
 
 import android.app.Instrumentation;
+import android.hardware.input.InputManager;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.SparseLongArray;
+import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+import android.view.WindowManagerGlobal;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -149,7 +152,7 @@ public class InputServer implements Runnable {
             // Send a down event
             MotionEvent ev = it.obtainEv();
             ev.setAction(MotionEvent.ACTION_DOWN);
-            mIt.sendPointerSync(ev);
+            sendPointerSync(ev);
             ev.recycle();
             downPending = false;
         }
@@ -165,7 +168,8 @@ public class InputServer implements Runnable {
                 }
                 ev.addBatch(it.time, it.x, it.y, 0, 0, 0);
             }
-            mIt.sendPointerSync(ev);
+
+            sendPointerSync(ev);
             ev.recycle();
 
             if (it == null) {
@@ -174,7 +178,7 @@ public class InputServer implements Runnable {
         }
 
         MotionEvent ev = it.obtainEv();
-        mIt.sendPointerSync(ev);
+        sendPointerSync(ev);
         ev.recycle();
 
         if (it.action == MotionEvent.ACTION_UP) {
@@ -211,6 +215,31 @@ public class InputServer implements Runnable {
         @Override
         public void run() {
             mIt.sendKeySync(event);
+        }
+    }
+
+    public void sendPointerSync(MotionEvent event) {
+        try {
+            if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) == 0) {
+                event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
+            }
+            final boolean syncBefore = event.getAction() == MotionEvent.ACTION_DOWN
+                    || event.isFromSource(InputDevice.SOURCE_MOUSE);
+            final boolean syncAfter = event.getAction() == MotionEvent.ACTION_UP;
+
+            if (syncBefore) {
+                WindowManagerGlobal.getWindowManagerService()
+                        .syncInputTransactions(true /*waitForAnimations*/);
+            }
+            InputManager.getInstance().injectInputEvent(
+                    event, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
+
+            if (syncAfter) {
+                WindowManagerGlobal.getWindowManagerService()
+                        .syncInputTransactions(true /*waitForAnimations*/);
+            }
+        } catch (Throwable e) {
+            mIt.sendPointerSync(event);
         }
     }
 

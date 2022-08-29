@@ -634,27 +634,6 @@ $(function () {
 
         setupWindowTitle(appInfo)
         currentAppInfo = appInfo;
-        setupBackButton(appInfo)
-    }
-
-    function setupBackButton(appInfo) {
-        $("#btn-go-back")
-            .show()
-            .unbind("click")
-            .click(function() {
-                if (appInfo.goBack) {
-                    $("#btn-go-back").unbind("click");
-                    $("#hview").addClass("hide hidden")
-                    $("#device-list-content")
-                        .empty()
-                        .show();
-                    $(".slider-group").addClass("hidden").removeClass("visible")
-                    $("#vlist, #border-box").removeClass("multi-page")
-                    appInfo.goBack();
-                } else {
-                    window.location.reload()
-                }
-            })
     }
 
     function showViewHierarchyUX() {
@@ -663,6 +642,7 @@ $(function () {
         $("#device-list-content").hide()
         $("#darkThemeSwitch").hide()
         $("#hview").removeClass("hide").removeClass("hidden");
+        backStack.add("?hview");
     }
 
     function onFirstViewHierarchyRendered() {
@@ -680,7 +660,6 @@ $(function () {
         showViewHierarchyUX()
         $("#btn-custom-command").hide();
         setupWindowTitle(currentAppInfo)
-        setupBackButton(appInfo)
         $(".slider-group").removeClass("hidden").addClass("visible")
         $("#vlist, #border-box").addClass("multi-page")
 
