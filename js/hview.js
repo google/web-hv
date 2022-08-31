@@ -18,6 +18,10 @@ let tlHvAction;
 $(function () {
     let currentAppInfo;
     const KEY_DIVIDER = "divider";
+    const GRID_MODE = 0;
+    const IMAGE_MODE = 1;
+    const GRID_AND_IMAGE_MODE = 2;
+    const APP_MODE = 3;
 
     let currentRootNode = null;
     let selectedNode;
@@ -654,14 +658,14 @@ $(function () {
 
     tlHvAction = function(appInfo) {
         currentAppInfo = appInfo
-        /* Set this to avoid null pointer exceptions. */
-        viewController = new NoOpServiceController()
+        viewController = new OtioseServiceController()
 
         showViewHierarchyUX()
         $("#btn-custom-command").hide();
         setupWindowTitle(currentAppInfo)
         $(".slider-group").removeClass("hidden").addClass("visible")
         $("#vlist, #border-box").addClass("multi-page")
+        enableGridMode()
 
         function addToNodeMap(node /* ViewNode */, rootNodeIndex /* Integer */) {
             let mapValue /* ViewNode[] | null */ = nodeMap.get(node.name)
@@ -1353,18 +1357,17 @@ $(function () {
 
         showContext(menu, function () {
             switch (this.id) {
-                case 0:  // only grid
-                    $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
-                    $("#image-preview").hide();
+                case GRID_MODE:  // only grid
+                    enableGridMode()
                     break;
-                case 1: // Only image
+                case IMAGE_MODE: // Only image
                     $("#image-preview").show();
                     break;
-                case 2: // both
+                case GRID_AND_IMAGE_MODE: // both
                     $("#image-preview").hide();
                     $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
                     break;
-                case 3: // App view
+                case APP_MODE: // App view
                     $("#image-preview").hide();
                     $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG);
                     break;
@@ -1373,6 +1376,12 @@ $(function () {
         }, e);
     };
     $("#sshot-tab").bind("contextmenu", showPreviewContext);
+
+    function enableGridMode() {
+        $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+        $("#image-preview").hide();
+        currentPreviewMode = GRID_MODE;
+    }
 
     /** ********************** Show/hide hidden nodes ********************** */
     // Hides the node and all its children recursively.

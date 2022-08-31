@@ -325,7 +325,10 @@ class OfflineServiceController {
     }
 }
 
-class NoOpServiceController {
+class OtioseServiceController {
+    constructor() {
+        this.hasNoImage = true;
+    }
     loadViewList() {
         throw "loadViewList() is not implemented. You might be using the wrong ServiceController.";
     }
