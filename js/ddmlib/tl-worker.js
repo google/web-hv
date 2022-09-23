@@ -18,50 +18,18 @@ importScripts("../../third_party/pako/pako_inflate.min.js")
 importScripts("viewnode.js")
 importScripts("../constants.js")
 
-let rootNodes /* ViewNode[] */
-let formattingIndex = 0
-let classNames /* string[] */
-
 self.onmessage = function(event) {
-    if (rootNodes == null) {
-        let protoData = event.data.tlHvDataAsBinaryArray;
-        let protoFile;
-        if (event.data.type == TYPE_TIME_LAPSE_BUG_REPORT) {
-            protoFile =  "../../protos/view_capture.proto";
-            protoData = pako.inflate(protoData);
-        } else {
-            protoFile = "../../protos/view_capture_deprecated.proto";
+    protobuf.load("../../protos/view_capture.proto").then(async function(root) {
+        const parsedProto = root
+            .lookupType("com.android.launcher3.view.ExportedData")
+            .decode(pako.inflate(event.data.tlHvDataAsBinaryArray));
+
+        const rootNodes /* ViewNode[] */ = parsedProto.frameData.map(f => f.node)
+        postMessage({ frameCount: rootNodes.length })
+
+        for (let i = 0; i < rootNodes.length; i++) {
+            formatProperties(rootNodes[i], parsedProto.classname)
+            postMessage({ rootNode: rootNodes[i] })
         }
-        protobuf.load(protoFile).then(function(root) {
-            let parsedProto = root
-                .lookupType("com.android.launcher3.view.ExportedData")
-                .decode(protoData);
-
-            rootNodes = parsedProto.frameData.map(f => f.node)
-            classNames = parsedProto.classname;
-            postMessage({ frameCount: rootNodes.length })
-            formatNextNode()
-        })
-    } else {
-        sendNodeToUiThread(event.data.processedIndex)
-    }
-}
-
-/* If the Ui thread processes nodes faster than the worker thread can format them,
-   wait for the next node to be formatted before sending it. */
-function sendNodeToUiThread(processedIndex) {
-    if (processedIndex < formattingIndex && processedIndex < rootNodes.length) {
-        postMessage({ rootNode: rootNodes[processedIndex] })
-    } else {
-        setTimeout(sendNodeToUiThread, 1, processedIndex)
-    }
-}
-
-/* Pause processing for 1 ms so that the worker thread can respond to messages
-   sent from the main thread request an additional formatted node to process. */
-function formatNextNode() {
-    if (formattingIndex < rootNodes.length) {
-        formatProperties(rootNodes[formattingIndex], classNames)
-        setTimeout(formatNextNode, 1, ++formattingIndex)    
-    }
+    })
 }
