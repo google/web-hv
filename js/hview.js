@@ -535,7 +535,7 @@ $(function () {
         }
         menu.push(null);
 
-        if (!this.node.disablePreview) {
+        if (!this.node.el.classList.contains("preview-disabled")) {
             menu.push({
                 text: "Disable preview",
                 icon: "ic_hide",
@@ -615,6 +615,8 @@ $(function () {
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
         showViewHierarchyUX()
+        $(".slider-group").addClass("hidden visible")
+        $("#vlist, #border-box").removeClass("multi-page")
 
         viewController = createViewController(appInfo);
         viewController.loadViewList().then(rootNode => {
@@ -883,7 +885,7 @@ $(function () {
         const heightFactor = currentRootNode.height / $(this).height();
 
         const updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
-            if (node.disablePreview || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
+            if (node.el.classList.contains("preview-disabled") || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
                 return null;
             }
 
@@ -988,11 +990,9 @@ $(function () {
                 profileView(selectedNode);
                 break;
             case 3: // Disable preview
-                selectedNode.disablePreview = true;
                 selectedNode.el.classList.add("preview-disabled");
                 break;
             case 4: // Enable preview
-                selectedNode.disablePreview = false;
                 selectedNode.el.classList.remove("preview-disabled");
                 break;
             case 5: // Collapse all
