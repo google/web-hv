@@ -615,6 +615,8 @@ $(function () {
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
         showViewHierarchyUX()
+        $(".slider-group").addClass("hidden visible")
+        $("#vlist, #border-box").removeClass("multi-page")
 
         viewController = createViewController(appInfo);
         viewController.loadViewList().then(rootNode => {
