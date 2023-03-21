@@ -54,6 +54,7 @@ async function handleLoadFile(reader) {
 
         const bugFile = zip.file(/^bugreport/);
         if (bugFile != null && bugFile.length == 1) {
+            loadTimeLapseFiles(zip, list)
             return loadBugFile(bugFile[0], list);
         }
     }
@@ -66,6 +67,18 @@ async function handleLoadFile(reader) {
     }
 
     postMessage(appInfo);
+}
+
+function loadTimeLapseFiles(zip, list) {
+    zip.folder(WM_TRACE_DIR).file(VIEW_CAPTURE_REGEX).forEach(file => {
+        list.push({
+            name: file.name.substring(file.name.lastIndexOf("/")+1, file.name.lastIndexOf(".")),
+            data: file.asUint8Array(),
+            type: TYPE_TIME_LAPSE_BUG_REPORT,
+            isTimeLapse: true,
+            display: { }
+        })
+    })
 }
 
 async function loadBugFile(bugFile, list) {
@@ -157,28 +170,15 @@ async function loadBugFile(bugFile, list) {
 
     let line;
     while ((line = liner.next()) != null) {
-        if (VIEW_CAPTURE_REGEX.test(line)) {
-            const tlHvDataAsBase64String = line.replace(VIEW_CAPTURE_REGEX, "")
-            const tlHvDataAsBinaryArray = base64ToUint8Array(tlHvDataAsBase64String)
-
-            list.push({
-                name: "Launcher's View Capture",
-                data: tlHvDataAsBinaryArray,
-                type: TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED,
-                isTimeLapse: true,
-                display: { }
-            })
-        } else {
-            PARSING_DATA.forEach(p => {
-                if (p.header == line.trim()) {
-                    const r = parseSectionList(p, line.indexOf(p.header));
-                    if (!parseData[p.key]) {
-                        parseData[p.key] = [];
-                    }
-                    r.forEach(e => parseData[p.key].push(e));
+        PARSING_DATA.forEach(p => {
+            if (p.header == line.trim()) {
+                const r = parseSectionList(p, line.indexOf(p.header));
+                if (!parseData[p.key]) {
+                    parseData[p.key] = [];
                 }
-            })
-        }
+                r.forEach(e => parseData[p.key].push(e));
+            }
+        })
     }
 
     if (parseData.timelapse) {
@@ -191,7 +191,7 @@ async function loadBugFile(bugFile, list) {
                 list.push({
                     name: `ViewCapture: ${e.name}`,
                     data: data,
-                    type: TYPE_TIME_LAPSE_BUG_REPORT,
+                    type: TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED,
                     isTimeLapse: true,
                     pname: e.pname,
                     display: { }

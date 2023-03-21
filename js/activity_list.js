@@ -33,7 +33,7 @@ var activityListAction = function (initializer, skipPush) {
             info.use_new_api = false;
         }
 
-        if (info.type == TYPE_TIME_LAPSE_BUG_REPORT || info.type == TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED) {
+        if (info.isTimeLapse) {
             tlHvAction(info)
         } else {
             hViewAction(info);
@@ -55,8 +55,8 @@ var activityListAction = function (initializer, skipPush) {
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
-        for (let i = 0; i < list.length; i++) {
-            const l = list[i];
+
+        const setupOneListItem = function(l) {
             const entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 
             const icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
@@ -83,6 +83,22 @@ var activityListAction = function (initializer, skipPush) {
             }
             if (subText != null) {
                 $('<div class="subtext">').appendTo(entry).text(subText);
+            }
+        }
+
+        for (let i = 0; i < list.length; i++) {
+            if (list[i].type == TYPE_TIME_LAPSE_BUG_REPORT) {
+                const w = createWorker("js/ddmlib/mtl-worker.js")
+                w.onerror = function () {
+                    throw "Error parsing view data"
+                }
+                w.onmessage = function (e) {
+                    setupOneListItem({ name: e.data.title, isTimeLapse: true, display: { }, worker: w, windowIndex: e.data.index,
+                        data: { /* All data is already unwrapped in the worker, no need to store it here. */ } })
+                }
+                w.postMessage({ action: TL_ACTION_UNWRAP, data: list[i].data })
+            } else {
+                setupOneListItem(list[i])
             }
         }
     }

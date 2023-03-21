@@ -801,7 +801,7 @@ $(function () {
             showHiddenNodeOptionChanged()
         }
 
-        const w = createWorker("js/ddmlib/tl-worker.js");
+        const w = (appInfo.worker != undefined) ? appInfo.worker : createWorker("js/ddmlib/tl-worker.js")
         w.onerror = function () {
             throw "Error parsing view data"
         }
@@ -811,7 +811,11 @@ $(function () {
             frameCount = e.data.frameCount
             document.getElementById("tl-range").max = frameCount
         }
-        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data, type: appInfo.type });
+        if (appInfo.worker != undefined) {
+            w.postMessage({ index: appInfo.windowIndex, action: TL_ACTION_LOAD_WINDOW })
+        } else {
+            w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
+        }
 
         let previousIndex = 0
 
