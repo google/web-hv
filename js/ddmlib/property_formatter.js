@@ -21,7 +21,9 @@ const EXCLUSION_LIST = new Set([
     "children",
     "parent",
     "classname",
+    "classnameIndex",
     "treeDisplayName",
+    "hashcode",
     "name",
     "boxPos",
     "boxStylePos",
@@ -55,7 +57,7 @@ PROPERTY_TYPE_MAP.set("visibility", MISC_TYPE)
 PROPERTY_TYPE_MAP.set("id", DEFAULT_TYPE)
 
 /* returns the root ViewNode that was passed in and altered */
-const formatProperties = function(root /* ViewNode */) {
+const formatProperties = function(root /* ViewNode */, classNames /* string[] */) {
     function inner(node /* ViewNode */,
                    maxW /* Int */,
                    maxH /* Int */,
@@ -84,6 +86,9 @@ const formatProperties = function(root /* ViewNode */) {
 
         if (node.name == undefined) {
             node.name = node.classname
+        }
+        if (node.name == undefined && classNames) {
+            node.name = classNames[node.classnameIndex] + "@" + node.hashcode;
         }
 
         node.treeDisplayName = node.name.split(".")
@@ -114,7 +119,7 @@ const formatProperties = function(root /* ViewNode */) {
                 }
             }
 
-            node.properties.sort((a, b) => PROPERTY_TYPE_MAP.get(a.name).localeCompare(PROPERTY_TYPE_MAP.get(b.name)))
+            node.properties.sort((a, b) => PROPERTY_TYPE_MAP.get(a.name)?.localeCompare(PROPERTY_TYPE_MAP.get(b.name)))
         }
         node.namedProperties = {};
         for (let i = 0; i < node.properties.length; i++) {

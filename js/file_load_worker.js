@@ -79,7 +79,6 @@ async function loadBugFile(bugFile, list) {
             header: "WINDOW MANAGER WINDOWS (dumpsys window windows)",
             titleRegX: /^(\s+)Window #\d+ Window\{([a-zA-Z\d]+) [a-zA-Z\d]+ ([^}\s]+)\}:/,
             titleGroups: {
-                spaces: 1,
                 hashCode: 2,
                 name: 3,
             },
@@ -95,7 +94,6 @@ async function loadBugFile(bugFile, list) {
             header: "Packages:",
             titleRegX: /^(\s+)Package \[([a-z_A-Z\d./]+)\] \(([a-zA-Z\d]+)\):/,
             titleGroups: {
-                spaces: 1,
                 hashCode: 3,
                 name: 2,
             },
@@ -103,32 +101,56 @@ async function loadBugFile(bugFile, list) {
             entries: {
                 userId: / userId=(\d+)\b/
             }
+        },
+        {
+            key: "timelapse",
+            header: "ContinuousViewCapture:",
+            titleRegX: /^\s+window ([^\:\s]+):/,
+            titleGroups: {
+                hashCode: 2,
+                name: 1,
+            },
+
+            entries: {
+                pname: /\s+pkg:([a-zA-Z\d\.]+)\b/,
+                data: /\s+data:(.+)$/
+            }
         }
     ]
 
     // Parses a list of sections
-    function parseSectionList(parsingEntry) {
+    function parseSectionList(parsingEntry, spacesLength) {
         let match;
         const result = [];
-        while (match = parsingEntry.titleRegX.exec(liner.next())) {
-            const section = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
 
-            parseSection(section, match[parsingEntry.titleGroups.spaces], parsingEntry);
-            result.push(section);
+        let spaces = " ";
+        for (let i = 1; i < spacesLength; i++) {
+            spaces += " ";
         }
-        return result;
-    }
 
-    function parseSection(output, spaces, parsingEntry) {
-        while(liner.peek() != null && liner.peek().startsWith(spaces + " ")) {
+
+        let lastSection = null;
+        while(liner.peek() != null && liner.peek().startsWith(spaces)) {
             const line = liner.next();
-            let match;
-            for (const [key, value] of Object.entries(parsingEntry.entries)) {
-                if (match = value.exec(line)) {
-                    output[key] = match[1];
+            if (match = parsingEntry.titleRegX.exec(line)) {
+                if (lastSection != null) {
+                    result.push(lastSection);
+                }
+
+                lastSection = {hashCode: match[parsingEntry.titleGroups.hashCode], name: match[parsingEntry.titleGroups.name]};
+            } else if (lastSection != null) {
+                for (const [key, value] of Object.entries(parsingEntry.entries)) {
+                    if (match = value.exec(line)) {
+                        lastSection[key] = match[1];
+                    }
                 }
             }
         }
+
+        if (lastSection != null) {
+            result.push(lastSection);
+        }
+        return result;
     }
 
     const parseData = { };
@@ -142,20 +164,41 @@ async function loadBugFile(bugFile, list) {
             list.push({
                 name: "Launcher's View Capture",
                 data: tlHvDataAsBinaryArray,
-                type: TYPE_TIME_LAPSE_BUG_REPORT,
+                type: TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED,
                 isTimeLapse: true,
                 display: { }
             })
         } else {
             PARSING_DATA.forEach(p => {
-                if (p.header == line) {
-                    const r = parseSectionList(p);
-                    if (!parseData[p.key] || parseData[p.key].length < r.length) {
-                        parseData[p.key] = r;
+                if (p.header == line.trim()) {
+                    const r = parseSectionList(p, line.indexOf(p.header));
+                    if (!parseData[p.key]) {
+                        parseData[p.key] = [];
                     }
+                    r.forEach(e => parseData[p.key].push(e));
                 }
             })
         }
+    }
+
+    if (parseData.timelapse) {
+        parseData.timelapse.forEach(e => {
+            if (!e.data) {
+                return;
+            }
+            try {
+                let data = base64ToUint8Array(e.data);
+                list.push({
+                    name: `ViewCapture: ${e.name}`,
+                    data: data,
+                    type: TYPE_TIME_LAPSE_BUG_REPORT,
+                    isTimeLapse: true,
+                    pname: e.pname,
+                    display: { }
+                })
+            } catch(e) { }
+
+        });
     }
 
     if (parseData.windows) {
@@ -192,13 +235,11 @@ async function loadBugFile(bugFile, list) {
                 entry.icon = {
                     value: `http://cdn.apk-cloud.com/detail/image/${entry.pname}-w250.png`
                 }
-                list.hasIcons = true;
             }
         });
     }
 
     list.use_new_api = false;
-    list.hasIcons = true
     postMessage({type: TYPE_BUG_REPORT, list: list});
 }
 

@@ -13,9 +13,13 @@
 // limitations under the License.
 
 /* Action to refresh activity list */
-const activityListAction = function (initializer) {
+var activityListAction = function (initializer, skipPush) {
+    if (!skipPush) {
+        backStack.add("?activity_list", () => activityListAction(initializer, true));
+    }
     progress.show();
-    const content = $("#device-list-content").empty();
+    var content = $("#device-list-content").empty().show();
+    $("#hview, #dmirrorview").addClass("hide").addClass("hidden");
 
     let jdwpErrorContainer;
     let windowLoaded;
@@ -28,11 +32,8 @@ const activityListAction = function (initializer) {
         if (newApiChk != null && newApiChk.is(':checked')) {
             info.use_new_api = false;
         }
-        info.goBack = function() {
-            activityListAction(initializer);
-        };
 
-        if (info.type == TYPE_TIME_LAPSE_BUG_REPORT) {
+        if (info.type == TYPE_TIME_LAPSE_BUG_REPORT || info.type == TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED) {
             tlHvAction(info)
         } else {
             hViewAction(info);

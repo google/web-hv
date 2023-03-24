@@ -14,41 +14,22 @@
 
 importScripts("property_formatter.js")
 importScripts("../../third_party/protobuf.min.js")
+importScripts("../../third_party/pako/pako_inflate.min.js")
 importScripts("viewnode.js")
-
-let rootNodes /* ViewNode[] */
-let formattingIndex = 0
+importScripts("../constants.js")
 
 self.onmessage = function(event) {
-    if (rootNodes == null) {
-        protobuf.load("../../protos/view_capture.proto").then(function(root) {
-            rootNodes = root.lookupType("com.android.launcher3.view.ExportedData")
-                            .decode(event.data.tlHvDataAsBinaryArray)
-                            .frameData
-                            .map(f => f.node)
-            postMessage({ frameCount: rootNodes.length })
-            formatNextNode()
-        })
-    } else {
-        sendNodeToUiThread(event.data.processedIndex)
-    }
-}
+    protobuf.load("../../protos/view_capture.proto").then(async function(root) {
+        const parsedProto = root
+            .lookupType("com.android.launcher3.view.ExportedData")
+            .decode(pako.inflate(event.data.tlHvDataAsBinaryArray));
 
-/* If the Ui thread processes nodes faster than the worker thread can format them,
-   wait for the next node to be formatted before sending it. */
-function sendNodeToUiThread(processedIndex) {
-    if (processedIndex < formattingIndex && processedIndex < rootNodes.length) {
-        postMessage({ rootNode: rootNodes[processedIndex] })
-    } else {
-        setTimeout(sendNodeToUiThread, 1, processedIndex)
-    }
-}
+        const rootNodes /* ViewNode[] */ = parsedProto.frameData.map(f => f.node)
+        postMessage({ frameCount: rootNodes.length })
 
-/* Pause processing for 1 ms so that the worker thread can respond to messages
-   sent from the main thread request an additional formatted node to process. */
-function formatNextNode() {
-    if (formattingIndex < rootNodes.length) {
-        formatProperties(rootNodes[formattingIndex])
-        setTimeout(formatNextNode, 1, ++formattingIndex)    
-    }
+        for (let i = 0; i < rootNodes.length; i++) {
+            formatProperties(rootNodes[i], parsedProto.classname)
+            postMessage({ rootNode: rootNodes[i] })
+        }
+    })
 }

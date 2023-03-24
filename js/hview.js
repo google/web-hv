@@ -18,10 +18,13 @@ let tlHvAction;
 $(function () {
     let currentAppInfo;
     const KEY_DIVIDER = "divider";
+    const GRID_MODE = 0;
+    const IMAGE_MODE = 1;
+    const GRID_AND_IMAGE_MODE = 2;
+    const APP_MODE = 3;
 
     let currentRootNode = null;
     let selectedNode;
-    let lastSelectedNode;
     let favoriteProperties = [];
     let viewController;
     let showHiddenNodes = false;
@@ -297,8 +300,7 @@ $(function () {
     }
 
     const selectNode = function () {
-        lastSelectedNode = selectedNode
-        selectedNode = this.node;
+        selectedNode = findDescendantById(currentRootNode, this.node.treeDisplayName)
 
         if (this.classList.contains(CLS_SELECTED)) return;
         document.querySelectorAll(".last_selected").forEach((it) => {
@@ -378,6 +380,7 @@ $(function () {
 
             const value = "" + p.value;
             const labelTag = labelProtoType.cloneNode()
+            labelTag.id = "" + p.name + "_valueContainer"
 
             if (value == "") {
                 labelTag.innerHTML = "&nbsp;"
@@ -532,7 +535,7 @@ $(function () {
         }
         menu.push(null);
 
-        if (!this.node.disablePreview) {
+        if (!this.node.el.classList.contains("preview-disabled")) {
             menu.push({
                 text: "Disable preview",
                 icon: "ic_hide",
@@ -590,6 +593,7 @@ $(function () {
         el.appendChild(elWrap)
         el.node = node
         el.box = box
+        el.id = node.treeDisplayName
 
         box.el = el
 
@@ -604,12 +608,15 @@ $(function () {
             for (let i = 0; i < node.children.length; i++) {
                 renderNode(node.children[i], newContainer, boxContainer);
             }
+            el.childContainer = newContainer
         }
     }
 
     /********************************* Refresh view *********************************/
     hViewAction = function (appInfo) {
         showViewHierarchyUX()
+        $(".slider-group").addClass("hidden visible")
+        $("#vlist, #border-box").removeClass("multi-page")
 
         viewController = createViewController(appInfo);
         viewController.loadViewList().then(rootNode => {
@@ -634,27 +641,6 @@ $(function () {
 
         setupWindowTitle(appInfo)
         currentAppInfo = appInfo;
-        setupBackButton(appInfo)
-    }
-
-    function setupBackButton(appInfo) {
-        $("#btn-go-back")
-            .show()
-            .unbind("click")
-            .click(function() {
-                if (appInfo.goBack) {
-                    $("#btn-go-back").unbind("click");
-                    $("#hview").addClass("hide hidden")
-                    $("#device-list-content")
-                        .empty()
-                        .show();
-                    $(".slider-group").addClass("hidden").removeClass("visible")
-                    $("#vlist, #border-box").removeClass("multi-page")
-                    appInfo.goBack();
-                } else {
-                    window.location.reload()
-                }
-            })
     }
 
     function showViewHierarchyUX() {
@@ -663,6 +649,7 @@ $(function () {
         $("#device-list-content").hide()
         $("#darkThemeSwitch").hide()
         $("#hview").removeClass("hide").removeClass("hidden");
+        backStack.add("?hview");
     }
 
     function onFirstViewHierarchyRendered() {
@@ -674,142 +661,157 @@ $(function () {
 
     tlHvAction = function(appInfo) {
         currentAppInfo = appInfo
-        /* Set this to avoid null pointer exceptions. */
-        viewController = new NoOpServiceController()
+        viewController = new OtioseServiceController()
 
         showViewHierarchyUX()
         $("#btn-custom-command").hide();
         setupWindowTitle(currentAppInfo)
-        setupBackButton(appInfo)
         $(".slider-group").removeClass("hidden").addClass("visible")
         $("#vlist, #border-box").addClass("multi-page")
+        enableGridMode()
 
-        function addToNodeMap(node /* ViewNode */, rootNodeIndex /* Integer */) {
-            let mapValue /* ViewNode[] | null */ = nodeMap.get(node.name)
-            if (mapValue == null) {
-                mapValue = Array(rootNodes.length)
-                nodeMap.set(node.name, mapValue)
-            }
-            mapValue[rootNodeIndex] = node
-            for (let i = 0; i < node.children.length; i++) {
-                addToNodeMap(node.children[i], rootNodeIndex)
-            }
-        }
-
-        const vListDivs /* <div>[] */  = []
-        const boxDivs /* <div>[] */ = []
-        const rootNodes /* ViewNode[] */ = []
-        const nodeMap /* Map<String, ViewNode[]> | null */ = new Map()
-
+        let rootNodes = []
         let frameCount;
-        let processedIndex /* Integer */ = 0
+        let processedIndex = 0
 
-        /* If you are wondering why this work is not completely done in the web worker, its because JQuery/DOM
-           manipulation needs a DOM in order to work properly. I tried using a fake DOM, and JQuery's
-           append/after/before methods didn't work. Also, functions cannot be passed to and from WebWorkers,
-           so the hover / click / etc. methods can't be prepared off the main thread. Aside from WebWorkers,
-           browser Javascript doesn't provide any alternative methods of multi-threaded programming. */
-        function processRootNode(event) {
+        function receiveRootNode(event) {
             const rootNode = event.data.rootNode
-            const tBox = divProtoType.cloneNode()
-            const tVList = divProtoType.cloneNode()
-
-            renderNode(rootNode, tVList, tBox)
             rootNodes.push(rootNode)
-            vListDivs.push(tVList)
-            boxDivs.push(tBox)
-            addToNodeMap(rootNode, processedIndex)
 
             if (processedIndex == 0) {
-                currentRootNode = event.data.rootNode
-                document.getElementById("vlist_content").replaceChildren(...tVList.childNodes)
-                document.getElementById("border-box").replaceChildren(...tBox.childNodes)
+                currentRootNode = rootNode
+                renderNode(rootNode, document.getElementById("vlist_content"), document.getElementById("border-box"))
                 onFirstViewHierarchyRendered()
             }
             processedIndex++
 
-            if (processedIndex < frameCount) {
-                w.postMessage({ processedIndex: processedIndex })
-            } else {
+            if (processedIndex == frameCount) {
                 $("#main-progress").hide()
+                w.terminate()
             }
         }
 
-        /* It takes > 500ms to format 170 frames of launcher view hierarchy data,
-           and then copy that data over from the worker thread to the main thread.
-           In order to compensate for that, nodes are being continually formatted
-           until completion on the background thread, and then copied over as needed
-           1 at a time (copying an already formatted node takes ~1-2ms).
+        function clearState() {
+            rootNodes = []
+            frameCount = 0
+            processedIndex = 0
+            $("#tl-range").unbind("input change")
+            currentAppInfo = null;
+            currentRootNode = null;
+            selectedNode = null;
+            favoriteProperties = [];
+            viewController = null;
+            showHiddenNodes = false;
+            valueTypeMap = {};
+            $("#vlist_content, #border-box").empty()
+            w.terminate()
+            window.removeEventListener('popstate', clearState)
+        }
 
-           The natural pauses that come from requesting and receiving nodes from the
-           worker thread allow for a responsive and jank free UI while the entire collection
-           of view hierarchies are processed. */
+        // no memory leaks if the time lapse data view is dismissed.
+        window.addEventListener('popstate', clearState)
+
+        // Don't remove each individual el here because it is a hierarchical structure.
+        // When the top level is removed, so is everything else. 
+        function removeBoxesAndReferences(node) {
+            node.box.el = null
+            node.box.node = null
+            node.el.node = null
+            node.el.box = null
+            node.box.remove()
+            node.box = null
+            node.el = null
+            node.children.forEach(it => removeBoxesAndReferences(it))
+        }
+
+        function onSwitch(oldIndex, newIndex) {
+            const diff = compareNodes(rootNodes[newIndex], rootNodes[oldIndex])
+
+            const boxContainer = document.getElementById("border-box")
+            diff.withNewChildren.forEach((children, parent) => {
+                if (!parent.el.childContainer) {
+                    parent.el.childContainer = newContainerProtoType.cloneNode()
+                    parent.el.classList.add(CLS_EXPANDABLE)
+                    parent.el.ondblclick = treeToggle
+                    // insertBefore adds to the end if el.nextSibling is null
+                    parent.el.parentNode.insertBefore(parent.el.childContainer, parent.el.nextSibling)
+                }
+                for (let child of children) {
+                    renderNode(child, parent.el.childContainer, boxContainer)
+                }
+            })
+            diff.withRemovedChildren.forEach((children, parent) => {
+                for (let child of children) {
+                    if (child.el.childContainer) {
+                        child.el.childContainer.remove()
+                    }
+                    child.el.remove()
+                    removeBoxesAndReferences(child)
+                }
+                if (parent.children.length == 0 && parent.el.childContainer) {
+                    parent.el.classList.remove(CLS_EXPANDABLE)
+                    parent.el.ondblclick = null
+                    parent.el.childContainer.remove()
+                    parent.el.childContainer = null
+                }
+            })
+            diff.withReorderedChildren.forEach((it) => {
+                // Nodes that are appended, but already a part of the DOM tree are moved rather than added 2x.
+                // That is used here to re-order all the children according to their node order.
+                for (let i = 0; i < it.children.length; i++) {
+                    it.el.childContainer.append(it.children[i].el)
+                    if (it.children[i].el.childContainer) {
+                        it.el.childContainer.append(it.children[i].el.childContainer)
+                    }
+                }
+            })
+            diff.withMovedBoxPos.forEach(it => {
+                it.box.style.top = it.boxStylePos.top
+                it.box.style.left = it.boxStylePos.left
+                it.box.style.width = it.boxStylePos.width
+                it.box.style.height = it.boxStylePos.height
+            })
+
+            // Only update the properties for the selected node, whose values are in the properties window.
+            if (selectedNode != null) {
+                const newSelectedNode = findDescendantById(rootNodes[newIndex], selectedNode.treeDisplayName)
+                if (newSelectedNode != null) {
+                    const differentProperties = compareProperties(newSelectedNode, selectedNode)
+                    differentProperties.forEach(property => {
+                        const valueContainer = document.getElementById(`${property.name}_valueContainer`)
+                        // As of 09-22-2022, all multi-toggle values in time-lapse data are numbers
+                        if (valueContainer.classList.contains(CLS_MULTI_TOGGLE)) {
+                            valueContainer.querySelectorAll("option").forEach((it) => {
+                                if (it.value == "default") {
+                                    it.innerHTML = property.value
+                                } else if (it.value == "falgs-hex") {
+                                    it.innerHTML = "0x" + property.value.toString(16)
+                                }
+                                // ints can also be "color-hex", but we don't need to consider
+                                // that until time-lapse data contains color information.
+                            })
+                        } else {
+                            // Non-multi-toggle data is currently limited to strings and booleans
+                            valueContainer.innerHTML = property.value
+                        }
+                    })
+                    selectedNode = newSelectedNode
+                }
+            }
+            showHiddenNodeOptionChanged()
+        }
+
         const w = createWorker("js/ddmlib/tl-worker.js");
         w.onerror = function () {
             throw "Error parsing view data"
         }
         // Handle the first message, then delegate the rest of the responses to processRootNode
         w.onmessage = function (e) {
+            w.onmessage = receiveRootNode
             frameCount = e.data.frameCount
             document.getElementById("tl-range").max = frameCount
-            w.onmessage = processRootNode
-            w.postMessage({ processedIndex: processedIndex })
         }
-        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
-
-        function hasDifferentProperties(node /* ViewNode!! */, other /* ViewNode!! */) {
-            return node.id != other.id
-                || node.left != other.left
-                || node.top != other.top
-                || node.width != other.width
-                || node.height != other.height
-                || node.translationX != other.translationX
-                || node.translationY != other.translationY
-                || node.scaleX != other.scaleX
-                || node.scaleY != other.scaleY
-                || node.alpha != other.alpha
-                || node.willNotDraw != other.willNotDraw
-                || node.clipChildren != other.clipChildren
-                || node.visibility != other.visibility
-                || node.scrollX != other.scrollX
-                || node.scrollY != other.scrollY
-        }
-
-        function migrateSelectedState(index /* Integer */) {
-            function migrateOne(node /* ViewNode? */, clazz /* String */) {
-                if (node == null) return
-
-                function toggle() {
-                    if (node == null) return
-                    ["el", "box"].forEach((it) => node[it].classList.toggle(clazz))
-                }
-
-                toggle()
-                node = nodeMap.get(node.name)[index]
-                toggle()
-                return node
-            }
-
-            const lastFramesSelectedNode = selectedNode
-            selectedNode = migrateOne(selectedNode, CLS_SELECTED)
-
-            if (selectedNode != null && hasDifferentProperties(lastFramesSelectedNode, selectedNode)) {
-                renderProperties(selectedNode)
-            }
-
-            lastSelectedNode = migrateOne(lastSelectedNode, CLS_LAST_SELECTED)
-        }
-
-        function switchViewHierarchy(newIndex /* Integer */, oldIndex /* Integer */) {
-            const vListContent = document.getElementById("vlist_content")
-            const borderBox = document.getElementById("border-box")
-
-            vListDivs[oldIndex].replaceChildren(...vListContent.childNodes)
-            vListContent.replaceChildren(...vListDivs[newIndex].childNodes)
-
-            boxDivs[oldIndex].replaceChildren(...borderBox.childNodes)
-            borderBox.replaceChildren(...boxDivs[newIndex].childNodes)
-        }
+        w.postMessage({ tlHvDataAsBinaryArray: appInfo.data, type: appInfo.type });
 
         let previousIndex = 0
 
@@ -817,17 +819,10 @@ $(function () {
             .val("0")
             .unbind("input change")
             .on("input change", (jQueryEvent) => {
-                /* vListJQueries.length - 1 represents the number of root nodes that have already been processed
-                   and are available to be shown as a view hierarchy to the user. */
-                const index = Math.min(jQueryEvent.target.value, vListDivs.length - 1)
+                const index = Math.min(jQueryEvent.target.value, processedIndex-1)
                 if (previousIndex != index) {
-                    // Ordering of methods within 'if statement' matters for correct behavior
-                    migrateSelectedState(index)
-                    switchViewHierarchy(index, previousIndex)
-
                     currentRootNode = rootNodes[index]
-                    showHiddenNodeOptionChanged()
-
+                    onSwitch(previousIndex, index)
                     previousIndex = index
                     $("#tl-range").val(index)
                 }
@@ -890,7 +885,7 @@ $(function () {
         const heightFactor = currentRootNode.height / $(this).height();
 
         const updateSelection = function (node, x, y, firstNoDrawChild, clipX1, clipY1, clipX2, clipY2) {
-            if (node.disablePreview || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
+            if (node.el.classList.contains("preview-disabled") || !node.nodeDrawn || (nodesHidden && !node.isVisible)) {
                 return null;
             }
 
@@ -995,11 +990,9 @@ $(function () {
                 profileView(selectedNode);
                 break;
             case 3: // Disable preview
-                selectedNode.disablePreview = true;
                 selectedNode.el.classList.add("preview-disabled");
                 break;
             case 4: // Enable preview
-                selectedNode.disablePreview = false;
                 selectedNode.el.classList.remove("preview-disabled");
                 break;
             case 5: // Collapse all
@@ -1374,18 +1367,17 @@ $(function () {
 
         showContext(menu, function () {
             switch (this.id) {
-                case 0:  // only grid
-                    $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
-                    $("#image-preview").hide();
+                case GRID_MODE:  // only grid
+                    enableGridMode()
                     break;
-                case 1: // Only image
+                case IMAGE_MODE: // Only image
                     $("#image-preview").show();
                     break;
-                case 2: // both
+                case GRID_AND_IMAGE_MODE: // both
                     $("#image-preview").hide();
                     $("#border-box").removeClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
                     break;
-                case 3: // App view
+                case APP_MODE: // App view
                     $("#image-preview").hide();
                     $("#border-box").addClass(CLS_FORCE_NO_BG).removeClass(CLS_HIDE_MY_BG);
                     break;
@@ -1395,17 +1387,26 @@ $(function () {
     };
     $("#sshot-tab").bind("contextmenu", showPreviewContext);
 
+    function enableGridMode() {
+        $("#border-box").addClass(CLS_FORCE_NO_BG).addClass(CLS_HIDE_MY_BG);
+        $("#image-preview").hide();
+        currentPreviewMode = GRID_MODE;
+    }
+
     /** ********************** Show/hide hidden nodes ********************** */
-    // Hides the node and all its children recursively.
-    const hideNode = function (node, hide) {
+    // Hides or shows the node and all its children recursively.
+    const resetNodeVisibility = function (node, hide) {
         hide = hide || !node.isVisible
         if (hide) {
             node.box.style.display = "none"
             node.el.style.display = "none"
+        } else {
+            node.box.style.display = "block"
+            node.el.style.display = "block"
         }
         if (node.children.length) {
             for (let i = 0; i < node.children.length; i++) {
-                hideNode(node.children[i], hide);
+                resetNodeVisibility(node.children[i], hide);
             }
         }
     }
@@ -1414,7 +1415,7 @@ $(function () {
         if (showHiddenNodes) {
             $("#vlist_content label, #border-box div").show();
         } else {
-            hideNode(currentRootNode);
+            resetNodeVisibility(currentRootNode);
         }
     }
 

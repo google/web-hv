@@ -79,10 +79,26 @@
     margin-right: 8px;
     background-image: url(app_icon.png);
     background-size: 100%;
+    position: relative;
 }
 
-.activity-list .icon.time-lapse {
-    background-image: url("app_icon_under_chart-multiple.png");
+.activity-list .icon.time-lapse::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 20px;
+    height: 20px;
+    background: var(--filter-color);
+    border-radius: 10px;
+    content: " ";
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='24px' height='24px'><path d='M4,2C2.89,2 2,2.89 2,4V14H4V4H14V2H4M8,6C6.89,6 6,6.89 6,8V18H8V8H18V6H8M12,10C10.89,10 10,10.89 10,12V20C10,21.11 10.89,22 12,22H20C21.11,22 22,21.11 22,20V12C22,10.89 21.11,10 20,10H12Z' /></svg>");
+    background-repeat: no-repeat;
+    background-size: 13px;
+    background-position: center;
+    box-shadow: 0 0 3px rgba(0, 0, 0, .5);
+
+
+    /* background-image: url("app_icon_under_chart-multiple.png"); */
 }
 
 .old-api {
