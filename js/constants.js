@@ -43,4 +43,8 @@ const CMD_DEFLATE_STRING = 8;
 const CMD_SKIP_8_BITS = 16;
 
 const VIEW_VISIBLE = 0;
-const VIEW_CAPTURE_REGEX = /^\s*mViewCapture:\s*/
+const VIEW_CAPTURE_REGEX = /.*\.vc/
+const WM_TRACE_DIR = "FS/data/misc/wmtrace"
+
+const TL_ACTION_UNWRAP = 0;
+const TL_ACTION_LOAD_WINDOW = 1;

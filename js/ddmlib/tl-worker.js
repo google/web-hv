@@ -19,17 +19,20 @@ importScripts("viewnode.js")
 importScripts("../constants.js")
 
 self.onmessage = function(event) {
-    protobuf.load("../../protos/view_capture.proto").then(async function(root) {
-        const parsedProto = root
+    protobuf.load("../../protos/view_capture_deprecated.proto").then(async function(root) {
+        const exportedData = root
             .lookupType("com.android.launcher3.view.ExportedData")
             .decode(pako.inflate(event.data.tlHvDataAsBinaryArray));
-
-        const rootNodes /* ViewNode[] */ = parsedProto.frameData.map(f => f.node)
-        postMessage({ frameCount: rootNodes.length })
-
-        for (let i = 0; i < rootNodes.length; i++) {
-            formatProperties(rootNodes[i], parsedProto.classname)
-            postMessage({ rootNode: rootNodes[i] })
-        }
+        processFrames(exportedData, exportedData.classname)
     })
+}
+
+const processFrames = function (frameListContainer, classNameList) {
+    const rootNodes /* ViewNode[] */ = frameListContainer.frameData.map(f => f.node)
+    postMessage({ frameCount: rootNodes.length })
+
+    for (let i = 0; i < rootNodes.length; i++) {
+        formatProperties(rootNodes[i], classNameList)
+        postMessage({ rootNode: rootNodes[i] })
+    }
 }
