@@ -233,7 +233,7 @@ async function loadBugFile(bugFile, list) {
 
             if (entry.pname && !entry.pname.startsWith("com.android")) {
                 entry.icon = {
-                    value: `http://cdn.apk-cloud.com/detail/image/${entry.pname}-w250.png`
+                    value: `https://cdn.apk-cloud.com/detail/image/${entry.pname}-w250.png`
                 }
             }
         });
