@@ -88,7 +88,7 @@ var activityListAction = function (initializer, skipPush) {
 
         for (let i = 0; i < list.length; i++) {
             if (list[i].type == TYPE_TIME_LAPSE_BUG_REPORT) {
-                const w = createWorker("js/ddmlib/mtl-worker.js")
+                const w = createWorker("js/ddmlib/tl-worker.js")
                 w.onerror = function () {
                     throw "Error parsing view data"
                 }

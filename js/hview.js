@@ -801,21 +801,16 @@ $(function () {
             showHiddenNodeOptionChanged()
         }
 
-        const w = (appInfo.worker != undefined) ? appInfo.worker : createWorker("js/ddmlib/tl-worker.js")
-        w.onerror = function () {
+        appInfo.worker.onerror = function () {
             throw "Error parsing view data"
         }
         // Handle the first message, then delegate the rest of the responses to processRootNode
-        w.onmessage = function (e) {
-            w.onmessage = receiveRootNode
+        appInfo.worker.onmessage = function (e) {
+            appInfo.worker.onmessage = receiveRootNode
             frameCount = e.data.frameCount
             document.getElementById("tl-range").max = frameCount
         }
-        if (appInfo.worker != undefined) {
-            w.postMessage({ index: appInfo.windowIndex, action: TL_ACTION_LOAD_WINDOW })
-        } else {
-            w.postMessage({ tlHvDataAsBinaryArray: appInfo.data });
-        }
+        appInfo.worker.postMessage({ index: appInfo.windowIndex, action: TL_ACTION_LOAD_WINDOW })
 
         let previousIndex = 0
 
