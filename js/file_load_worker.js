@@ -114,20 +114,6 @@ async function loadBugFile(bugFile, list) {
             entries: {
                 userId: / userId=(\d+)\b/
             }
-        },
-        {
-            key: "timelapse",
-            header: "ContinuousViewCapture:",
-            titleRegX: /^\s+window ([^\:\s]+):/,
-            titleGroups: {
-                hashCode: 2,
-                name: 1,
-            },
-
-            entries: {
-                pname: /\s+pkg:([a-zA-Z\d\.]+)\b/,
-                data: /\s+data:(.+)$/
-            }
         }
     ]
 
@@ -179,26 +165,6 @@ async function loadBugFile(bugFile, list) {
                 r.forEach(e => parseData[p.key].push(e));
             }
         })
-    }
-
-    if (parseData.timelapse) {
-        parseData.timelapse.forEach(e => {
-            if (!e.data) {
-                return;
-            }
-            try {
-                let data = base64ToUint8Array(e.data);
-                list.push({
-                    name: `ViewCapture: ${e.name}`,
-                    data: data,
-                    type: TYPE_TIME_LAPSE_BUG_REPORT_DEPRECATED,
-                    isTimeLapse: true,
-                    pname: e.pname,
-                    display: { }
-                })
-            } catch(e) { }
-
-        });
     }
 
     if (parseData.windows) {

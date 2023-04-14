@@ -18,13 +18,27 @@ importScripts("../../third_party/pako/pako_inflate.min.js")
 importScripts("viewnode.js")
 importScripts("../constants.js")
 
+let classNames
+let windowList
+let packageName
+
 self.onmessage = function(event) {
-    protobuf.load("../../protos/view_capture_deprecated.proto").then(async function(root) {
-        const exportedData = root
-            .lookupType("com.android.launcher3.view.ExportedData")
-            .decode(pako.inflate(event.data.tlHvDataAsBinaryArray));
-        processFrames(exportedData, exportedData.classname)
-    })
+    if (event.data.action == TL_ACTION_UNWRAP) {
+        protobuf.load("../../protos/view_capture.proto").then(async function(root) {
+            const exportedData = root
+                .lookupType("com.android.app.viewcapture.data.ExportedData")
+                .decode(event.data.data)
+            classNames = exportedData.classname
+            windowList = exportedData.windowData
+            packageName = exportedData.package
+    
+            for (let i = 0; i < windowList.length; i++) {
+                postMessage({ title: packageName + windowList[i].title, index: i})
+            }
+        })
+    } else if (event.data.action == TL_ACTION_LOAD_WINDOW) {
+        processFrames(windowList[event.data.index], classNames)
+    }
 }
 
 const processFrames = function (frameListContainer, classNameList) {
