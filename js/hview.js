@@ -687,7 +687,7 @@ $(function () {
 
             if (processedIndex == frameCount) {
                 $("#main-progress").hide()
-                w.terminate()
+                appInfo.worker.terminate()
             }
         }
 
@@ -704,7 +704,7 @@ $(function () {
             showHiddenNodes = false;
             valueTypeMap = {};
             $("#vlist_content, #border-box").empty()
-            w.terminate()
+            appInfo.worker.terminate()
             window.removeEventListener('popstate', clearState)
         }
 
