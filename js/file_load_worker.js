@@ -52,10 +52,13 @@ async function handleLoadFile(reader) {
             }
         }
 
+        loadTimeLapseFiles(zip, list)
         const bugFile = zip.file(/^bugreport/);
         if (bugFile != null && bugFile.length == 1) {
-            loadTimeLapseFiles(zip, list)
             return loadBugFile(bugFile[0], list);
+        } else if (list.length > 0) {
+            list.use_new_api = false;
+            return postMessage({type: TYPE_BUG_REPORT, list: list});        
         }
     }
 
