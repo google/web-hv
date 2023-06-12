@@ -24,14 +24,17 @@ let packageName
 
 self.onmessage = function(event) {
     if (event.data.action == TL_ACTION_UNWRAP) {
-        protobuf.load("../../protos/view_capture.proto").then(async function(root) {
+        const protoFileVersion = (hasMagicNumber(event.data.data))
+            ? "magic_number"
+            : "multi_window"
+        protobuf.load(`../../protos/view_capture_${protoFileVersion}.proto`).then(async function(root) {
             const exportedData = root
                 .lookupType("com.android.app.viewcapture.data.ExportedData")
                 .decode(event.data.data)
             classNames = exportedData.classname
             windowList = exportedData.windowData
             packageName = exportedData.package
-    
+
             for (let i = 0; i < windowList.length; i++) {
                 postMessage({ title: packageName + windowList[i].title, index: i})
             }
@@ -49,4 +52,24 @@ const processFrames = function (frameListContainer, classNameList) {
         formatProperties(rootNodes[i], classNameList)
         postMessage({ rootNode: rootNodes[i] })
     }
+}
+
+const hasMagicNumber = function(uInt8Array) {
+    const MAGIC_NUMBER = [0x9, 0x78, 0x65, 0x90, 0x65, 0x73, 0x82, 0x65, 0x68]
+
+    const arrayEquals = function(one, other) {
+        if (one.length !== other.length) {
+          return false;
+        }
+
+        for (let i = 0; i < one.length; i++) {
+          if (one[i] !== other[i]) {
+            return false;
+          }
+        }
+
+        return true;
+    }
+
+    return arrayEquals(MAGIC_NUMBER, uInt8Array.slice(0, MAGIC_NUMBER.length))
 }
