@@ -58,7 +58,7 @@ async function handleLoadFile(reader) {
             return loadBugFile(bugFile[0], list);
         } else if (list.length > 0) {
             list.use_new_api = false;
-            return postMessage({type: TYPE_BUG_REPORT, list: list});        
+            return postMessage({type: TYPE_BUG_REPORT, list: list});
         }
     }
 
@@ -101,7 +101,7 @@ async function loadBugFile(bugFile, list) {
 
             entries: {
                 ownerUid: / mOwnerUid=(\d+) /,
-                display: / containing=\[\d+,\d+\]\[(\d+,\d+)\]/,
+                display: / mFullConfiguration=\{[^}]*\b(\d+, \d+)/,
                 dpi: / mFullConfiguration=\{[^}]*\b(\d+)dpi\b/
             }
         },

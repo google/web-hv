@@ -390,7 +390,7 @@ $(function () {
                 let colorWellDiv = undefined;
 
                 if (!isNaN(valueF)) {
-                    // Numbers could mean any number (sorry) of things, so let's try to show 
+                    // Numbers could mean any number (sorry) of things, so let's try to show
                     // some relevant interpretations, switchable via <option> drop-down.
                     const selectTag = selectProtoType.cloneNode()
                     selectTag.name = p.name
@@ -499,7 +499,7 @@ $(function () {
             profileInfoBox.find("#profile-info-m").text(this.node.measureTime.toFixed(5));
             profileInfoBox.find("#profile-info-l").text(this.node.layoutTime.toFixed(5));
             profileInfoBox.find("#profile-info-d").text(this.node.drawTime.toFixed(5));
-            profileInfoBox.show();            
+            profileInfoBox.show();
         }
     }
     const mouseOutNode = function () {
@@ -582,7 +582,7 @@ $(function () {
         elWrap.appendChild(span)
         elWrap.appendChild(document.createTextNode(node.treeDisplayName))
         elWrap.appendChild(xprofileProtoType.cloneNode())
-    
+
         const el = labelProtoType.cloneNode()
         container.appendChild(el)
         el.classList.add(CLS_WITH_ARROW)
@@ -654,7 +654,7 @@ $(function () {
 
     function onFirstViewHierarchyRendered() {
         resizeBoxView();
-        showHiddenNodeOptionChanged();    
+        showHiddenNodeOptionChanged();
         applyResizeData();
         $("#vlist_content label").first().click();
     }
@@ -712,7 +712,7 @@ $(function () {
         window.addEventListener('popstate', clearState)
 
         // Don't remove each individual el here because it is a hierarchical structure.
-        // When the top level is removed, so is everything else. 
+        // When the top level is removed, so is everything else.
         function removeBoxesAndReferences(node) {
             node.box.el = null
             node.box.node = null
@@ -874,7 +874,7 @@ $(function () {
         scrollToView($(node.el), $("#vlist_content"));
     }
 
-    /* TODO: When selecting UX element, select the top-most element. Currently, clicking on anything 
+    /* TODO: When selecting UX element, select the top-most element. Currently, clicking on anything
        within the border-box usually highlights the ScrimView as opposed to the actual target element. */
     $("#border-box").mouseover(function (e) {
         const offset = $(this).offset();
@@ -1015,7 +1015,7 @@ $(function () {
 
         function loadProp(n) {
             const line = data[index];
-            index++;            
+            index++;
             if (!line || line == "-1 -1 -1" || line.toLocaleLowerCase() == "done.") {
                 return false;
             }
@@ -1025,7 +1025,7 @@ $(function () {
             n.layoutTime = (parseInt(times[1]) / 1000.0) / 1000.0;
             n.drawTime = (parseInt(times[2]) / 1000.0) / 1000.0;
             n.profiled = true;
-            
+
             for (let i = 0; i < n.children.length; i++) {
                 if (!loadProp(n.children[i])) {
                     return false;
