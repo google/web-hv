@@ -84,16 +84,15 @@ DDMClient.prototype._listOldWindows = async function () {
     }
 }
 
-DDMClient.prototype.readProcessList = function (socket) {
-    const that = this;
-    socket.read(4, function (data) {
+DDMClient.prototype.readProcessList = async function (socket) {
+    while(true) {
+        var data = await socket.read(4);
         const len = parseInt(ab2str(data), 16);
-        socket.read(len, function (data) {
-            const list = ab2str(data).trim();
-            that.parseProcessList(list.split("\n"));
-            that.readProcessList(socket);
-        });
-    });
+
+        data = await socket.read(len);
+        const list = ab2str(data).trim();
+        this.parseProcessList(list.split("\n"));
+    }
 }
 
 DDMClient.prototype.trackProcesses = function () {

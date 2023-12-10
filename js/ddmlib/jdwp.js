@@ -42,7 +42,7 @@ jdwp.prototype._onDisconnect = function () {
     }
 }
 
-jdwp.prototype._connect = function () {
+jdwp.prototype._connect = async function () {
     const that = this;
     this.status = this.STATUS_CONNECTING;
 
@@ -51,19 +51,16 @@ jdwp.prototype._connect = function () {
     socket.keepOpen = true;
 
     const cmd = "JDWP-Handshake";
-    socket.read(cmd.length, function (data) {
-        data = ab2str(data);
-        if (data == cmd) {
-            that._onConnect();
-        } else {
-            socket.close();
-        }
-    });
     socket.write(cmd);
     this.socket = socket;
-}
 
-jdwp.prototype._onConnect = function () {
+    var data = ab2str(await socket.read(cmd.length))
+    if (data != cmd) {
+        socket.close();
+        return;
+    }
+
+    // Connected
     this.status = this.STATUS_CONNECTED;
     const calls = this.pendingCalls;
     this.pendingCalls = [];
@@ -71,33 +68,29 @@ jdwp.prototype._onConnect = function () {
     for (let i = 0; i < calls.length; i++) {
         this.socket.write(calls[i]);
     }
-    this._readNextChunk();
-}
 
-jdwp.prototype._readNextChunk = function () {
-    const that = this;
-    this.socket.read(11, function (data) {
+    // Do read loop
+    while(true) {
+        var data = await this.socket.read(11);
         const header = new DataInputStream(new Uint8Array(data));
         const len = header.readInt();
         const seq = header.readInt();
         const flags = header.read();
         const isCommand = flags != 128;
 
-        that.socket.read(len - 11, function (data) {
-            const reader = new DataInputStream(new Uint8Array(data));
-            const type = reader.readInt();   // chunk type
-            reader.readInt();   // result length;
+        data = await this.socket.read(len - 11);
+        const reader = new DataInputStream(new Uint8Array(data));
+        const type = reader.readInt();   // chunk type
+        reader.readInt();   // result length;
 
-            if (isCommand) {
-                console.log("Command received", type, getChunkType("APNM"));
-            } else {
-                reader.chunkType = type;
-                that.callbacks[seq].accept(reader);
-                that.callbacks[seq] = null;
-            }
-            that._readNextChunk();
-        });
-    });
+        if (isCommand) {
+            console.log("Command received", type, getChunkType("APNM"));
+        } else {
+            reader.chunkType = type;
+            this.callbacks[seq].accept(reader);
+            this.callbacks[seq] = null;
+        }
+    }
 }
 
 jdwp.prototype.destroy = function () {
