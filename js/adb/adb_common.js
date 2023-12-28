@@ -3,21 +3,14 @@
  */
 class TextResponseMerger {
     result = "";
-    decoder = new TextDecoder();
+    #decoder = new TextDecoder();
 
     merge(data) {
-        this.result += this.decoder.decode(data);
+        this.result += this.#decoder.decode(data);
     }
-}
 
-/**
- * Merger to read all data as byte array
- */
-class ByteResponseMerger{
-    result = null;
-
-    merge(data) {
-        this.result = this.result ? appendBuffer(this.result, data) : data;
+    isComplete() {
+        return false;
     }
 }
 
@@ -179,8 +172,13 @@ class BaseAdbStream {
         }
 
         this.onReceiveWrite = function (data) {
+            this.sendReady();
             responseMerger.merge(data);
-        }
+
+            if (responseMerger.isComplete()) {
+                this.close();
+            }
+        }.bind(this);
 
         this.#pending.forEach(this.onReceiveWrite);
         this.onClose = function () {

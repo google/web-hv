@@ -59,7 +59,7 @@ var activityListAction = function (initializer, skipPush) {
         const setupOneListItem = function(l) {
             const entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 
-            const icon = $('<div class="icon">').appendTo(entry).attr("icon-pid", l.pid);
+            const icon = $('<div class="icon">').appendTo(entry).attr("icon-id", l.iconId);
             if (l.isTimeLapse) {
                 icon.addClass("time-lapse")
             }
@@ -124,8 +124,8 @@ var activityListAction = function (initializer, skipPush) {
             renderActivities(mainContent.empty(), list);
         },
 
-        iconLoaded: function(pid, value) {
-            $(`div[icon-pid=${pid}]`).css("background-image", `url(${value})`);
+        iconLoaded: function(id, value) {
+            $(`div[icon-id=${id}]`).css("background-image", `url(${value})`);
         }
     };
 

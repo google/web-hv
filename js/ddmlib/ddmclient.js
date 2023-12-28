@@ -14,241 +14,257 @@
 
 const DISABLE_JDWP = false;
 
-function DDMClient(device, callbacks) {
-    device.closeAll();
+class DDMClient {
+    constructor(device, callbacks) {
+        device.closeAll();
 
-    this.callbacks = callbacks;
-    this.device = device;
-    this.processCache = {};
-    this.reloadCount = 0;
-    this.workingOnWindowList = true;
-    this.processNameErrorCount = 0;
-    this.processCount = 0;
+        this.callbacks = callbacks;
+        this.device = device;
+        this.processCache = {};
+        this.iconCache = {};
+        this.reloadCount = 0;
+        this.usingOldWindowListAPI = true;
 
-    this.iconLoader = device.sendFile("/data/local/tmp/processicon.jar", "commands/processicon.jar");
-    this.loadProp("density", "ro.sf.lcd_density");
-    this.loadProp("sdk_version", "ro.build.version.sdk");
-}
-
-DDMClient.prototype.loadProp = async function (property, command) {
-    this[property] = -1;
-    const msg = await this.device.shellCommand("getprop " + command);
-    if (msg != "") {
-        this[property] = parseInt(msg);
+        this.iconLoader = device.sendFile("/data/local/tmp/processicon.jar", "commands/processicon.jar");
+        this.#loadProp("density", "ro.sf.lcd_density");
+        this.#loadProp("sdk_version", "ro.build.version.sdk");
     }
-}
 
-DDMClient.prototype.loadOldWindows = async function () {
-    // Stop window service and start it again
-    await this.device.shellCommand("service call window 2");
-    await this.device.shellCommand("service call window 1 i32 4939");
-
-    const stream = this.device.openStream("tcp:4939");
-    stream.onReceiveWrite = function (result) {
-        result = ab2str(result);
-        stream.sendReady();
-        if (result.indexOf("LIST UPDATE") > -1) {
-            this._listOldWindows();
-            this.reloadWindows();
-        }
-    }.bind(this);
-    stream.write("AUTOLIST\n");
-    this._listOldWindows();
-}
-
-DDMClient.prototype._listOldWindows = async function () {
-    if (!this.workingOnWindowList) return;
-
-    const stream = this.device.openStream("tcp:4939");
-    stream.write("LIST\n");
-
-    let list = await stream.readAll();
-    list = list.trim().split("\n");
-
-    const result = [];
-    for (let i = 0; i < list.length - 1; i++) {
-        const parts = list[i].split(" ");
-        result.push({
-            type: TYPE_OLD,
-            name: parts[1].trim(),
-            id: parts[0].trim(),
-            density: this.density,
-            sdk_version: this.sdk_version,
-            device: this.device,
-            use_new_api : false
-        });
-    }
-    result.use_new_api = false;
-    if (this.workingOnWindowList) {
-        this.callbacks.windowsLoaded(result);
-    }
-}
-
-DDMClient.prototype.readProcessList = async function (socket) {
-    while(true) {
-        var data = await socket.read(4);
-        const len = parseInt(ab2str(data), 16);
-
-        data = await socket.read(len);
-        const list = ab2str(data).trim();
-        this.parseProcessList(list.split("\n"));
-    }
-}
-
-DDMClient.prototype.trackProcesses = function () {
-    if (DISABLE_JDWP) {
-        return;
-    }
-    const stream = this.device.openStream("track-jdwp");
-    this.readProcessList(stream);
-}
-
-DDMClient.prototype.parseProcessList = function (list) {
-    const oldCache = this.processCache;
-    const newCache = {};
-    this.processCache = newCache;
-    this.processCount = list.length;
-    for (let i = 0; i < list.length; i++) {
-        const pid = list[i];
-        if (oldCache[pid]) {
-            // process already exists
-            newCache[pid] = oldCache[pid];
-            oldCache[pid] = null;
-        } else {
-            // Load process name
-            this.loadProcessName(pid);
+    async #loadProp(property, command) {
+        this[property] = -1;
+        const msg = await this.device.shellCommand("getprop " + command);
+        if (msg != "") {
+            this[property] = parseInt(msg);
         }
     }
 
-    for (let pid in oldCache) {
-        if (oldCache[pid]) {
-            if (oldCache[pid].jdwp) {
-                oldCache[pid].jdwp.destroy();
+    async loadOldWindows() {
+        // Stop window service and start it again
+        await this.device.shellCommand("service call window 2");
+        await this.device.shellCommand("service call window 1 i32 4939");
+
+        const stream = this.device.openStream("tcp:4939");
+        stream.onReceiveWrite = function (result) {
+            result = ab2str(result);
+            stream.sendReady();
+            if (result.indexOf("LIST UPDATE") > -1) {
+                this.#listOldWindows();
+                this.#reloadJdwpWindows();
+            }
+        }.bind(this);
+        stream.write("AUTOLIST\n");
+        this.#listOldWindows();
+    }
+
+    async #listOldWindows() {
+        if (!this.usingOldWindowListAPI) return;
+
+        const stream = this.device.openStream("tcp:4939");
+        stream.write("LIST\n");
+        let list = (await stream.readAll()).trim().split("\n");
+
+        const windowPkgMap = {}
+        try {
+            let pkgList = (await this.device.shellCommand("pm list packages -U")).toLowerCase().split("\n");
+            let uidMap = {}
+            for (let i = 0; i < pkgList.length; i++) {
+                const k = pkgList[i].match(/package:([^\s]+)\s+uid:(\d+)/);
+                if (k) {
+                    uidMap[k[2]] = k[1]
+                }
+            }
+
+            let windowDump = await this.device.shellCommand("dumpsys window windows");
+            windowDump = windowDump.toLowerCase().split(/window\s+#\d+\s+window\{([0-9a-f]+)/);
+            for (let i = 1; i < windowDump.length; i+=2) {
+                const k = (windowDump[i + 1] + " ").match(/mowneruid=(\d+)/);
+                if (!k) continue;
+                windowPkgMap[windowDump[i]] = uidMap[k[1]];
+            }
+        } catch (e) {
+            // Ignore the extra work
+        }
+
+        const result = [];
+        for (let i = 0; i < list.length - 1; i++) {
+            const parts = list[i].split(" ");
+            const windowId = parts[0].trim();
+
+            const windowPkg = windowPkgMap[windowId];
+            const iconId = windowPkg ? windowPkg.replaceAll(".", "-") : undefined;
+            if (iconId) {
+                this.#prefetchIconForPid(windowPkg, iconId);
+            }
+            result.push({
+                type: TYPE_OLD,
+                name: parts[1].trim(),
+                id: windowId,
+                density: this.density,
+                sdk_version: this.sdk_version,
+                device: this.device,
+                use_new_api: false,
+                iconId: iconId,
+                pname: windowPkg,
+                icon: this.iconCache[windowPkg]
+            });
+        }
+        result.use_new_api = false;
+        if (this.usingOldWindowListAPI) {
+            this.callbacks.windowsLoaded(result);
+        }
+    }
+
+    async trackProcesses() {
+        if (DISABLE_JDWP) {
+            return;
+        }
+        const socket = this.device.openStream("track-jdwp");
+        while (true) {
+            var data = await socket.read(4);
+            const len = parseInt(ab2str(data), 16);
+
+            data = await socket.read(len);
+            const list = ab2str(data).trim();
+            this.#parseProcessList(list.split("\n"));
+        }
+    }
+
+    #parseProcessList(list) {
+        const oldCache = this.processCache;
+        this.processCache = {};
+        for (let i = 0; i < list.length; i++) {
+            const pid = list[i];
+            if (oldCache[pid]) {
+                // process already exists
+                this.processCache[pid] = oldCache[pid];
+                oldCache[pid] = null;
+            } else {
+                // Load process name
+                this.#loadProcessName(pid);
+            }
+        }
+
+        for (let pid in oldCache) {
+            if (oldCache[pid]) {
+                if (oldCache[pid].jdwp) {
+                    oldCache[pid].jdwp.destroy();
+                }
+            }
+        }
+        this.#reloadJdwpWindows();
+    }
+
+    async #loadProcessName(pid) {
+        const loader = new jdwp(pid, this.device);
+        const result = {jdwp: loader, hasError: false};
+        this.processCache[pid] = result;
+
+        try {
+            const data = await loader.writeChunk("HELO", [0, 0, 0, 1]);
+            data.readInt(); // server version
+            data.readInt(); // process id
+
+            const vmlen = data.readInt();
+            const len = data.readInt();
+            data.readStr(vmlen); // VM description len
+            result.name = data.readStr(len);
+        } catch (e) {
+            // Unable to load process name
+            result.hasError = true;
+
+            let allError = true;
+            for (const mp in this.processCache) {
+                allError = allError & this.processCache[mp].hasError;
+            }
+            if (allError) {
+                this.callbacks.jdwpError();
             }
         }
     }
-    this.reloadWindows();
-}
 
-DDMClient.prototype.loadProcessName = async function (pid) {
-    const loader = new jdwp(pid, this.device);
-    this.processCache[pid] = { jdwp: loader };
+    async #reloadJdwpWindows() {
+        this.reloadCount++;
+        const myCount = this.reloadCount;
 
-    try {
-        const data = await loader.writeChunk("HELO", [0, 0, 0, 1]);
-        data.readInt(); // server version
-        data.readInt(); // process id
-
-        const vmlen = data.readInt();
-        const len = data.readInt();
-        data.readStr(vmlen);    // VM description len
-
-        const name = data.readStr(len);
-
-        if (this.processCache[pid]) {
-            this.processCache[pid].name = name;
-        }
-    } catch (e) {
-        // Unable to load process name
-        this.processNameErrorCount++;
-        if (this.processNameErrorCount >= this.processCount) {
-            this.callbacks.jdwpError();
+        const windowToIdMap = {};
+        for (const pid in this.processCache) {
+            this.#loadWindowsForPid(pid, myCount, windowToIdMap).catch(e => { });
         }
     }
-}
 
-DDMClient.prototype.reloadWindows = async function () {
-    this.reloadCount++;
-    const myCount = this.reloadCount;
+    async #loadWindowsForPid(pid, myCount, windowToIdMap) {
+        const jdwp = this.processCache[pid].jdwp;
+        const data = await jdwp.writeChunk("VULW", [0, 0, 0, 1]);
+        if (myCount != this.reloadCount) {
+            return;
+        }
+        const count = data.readInt();
+        windowToIdMap[pid] = [];
 
-    const windowToIdMap = {};
+        for (let i = 0; i < count; i++) {
+            const id = data.readStr();
+            let name = id;
+            this.#prefetchIconForPid(pid, pid);
 
-    for (const pid in this.processCache) {
-        this._loadWindowsForPid(pid, myCount, windowToIdMap).catch(e => {});
-    }
-}
-
-DDMClient.prototype._newWindowLoaded = function (myCount, windowToIdMap) {
-    if (myCount != this.reloadCount) {
-        // This is called from some old call
-        return;
-    }
-    let windowList = [];
-    for (const pid in windowToIdMap) {
-        windowList = windowList.concat(windowToIdMap[pid]);
-    }
-    if (windowList.length == 0) return;
-    if (this.workingOnWindowList) {
-        this.workingOnWindowList = false;
-    }
-    windowList.sort(function (a, b) {
-        if (a.name > b.name) return 1;
-        if (a.name < b.name) return -1;
-        return 0;
-    });
-
-    windowList.use_new_api = this.sdk_version >= 23;
-    this.callbacks.windowsLoaded(windowList);
-}
-
-DDMClient.prototype._loadWindowsForPid = async function (pid, myCount, windowToIdMap) {
-    const jdwp = this.processCache[pid].jdwp;
-    const data = await jdwp.writeChunk("VULW", [0, 0, 0, 1]);
-    if (myCount != this.reloadCount) {
-        return;
-    }
-    const count = data.readInt();
-    const windowList = [];
-
-    for (let i = 0; i < count; i++) {
-        const id = data.readStr();
-        let name = id;
-
-        if (this.processCache[pid].icon == undefined) {
-            const iconGetter = this._getIconForPid(pid);
-            const that = this;
-            iconGetter.then(v =>  {
-                iconGetter.value = v
-                that.callbacks.iconLoaded(pid, v);
+            if (count == 1) {
+                name = name.split("/")[0];
+            } else {
+                name = name.substr(0, name.lastIndexOf("/"));
+            }
+            windowToIdMap[pid].push({
+                type: TYPE_JDWP,
+                pid: pid,
+                iconId: pid,
+                device: this.device,
+                id: id,
+                density: this.density,
+                sdk_version: this.sdk_version,
+                name: name,
+                use_new_api: this.sdk_version >= 23,
+                pname: this.processCache[pid].name,
+                icon: this.iconCache[pid]
             });
-            this.processCache[pid].icon = iconGetter;
         }
 
-        if (count == 1) {
-            name = name.split("/")[0];
-        } else {
-            name = name.substr(0, name.lastIndexOf("/"));
+        // Merge the list loaded so far
+        let windowList = [];
+        for (const pid in windowToIdMap) {
+            windowList = windowList.concat(windowToIdMap[pid]);
         }
-        windowList.push({
-            type: TYPE_JDWP,
-            pid: pid,
-            device: this.device,
-            id: id,
-            density: this.density,
-            sdk_version: this.sdk_version,
-            name: name,
-            use_new_api: this.sdk_version >= 23,
-            pname: this.processCache[pid].name,
-            icon: this.processCache[pid].icon
+        if (windowList.length == 0) return;
+
+        this.usingOldWindowListAPI = false;
+        windowList.sort(function (a, b) {
+            if (a.name > b.name) return 1;
+            if (a.name < b.name) return -1;
+            return 0;
         });
+
+        windowList.use_new_api = this.sdk_version >= 23;
+        this.callbacks.windowsLoaded(windowList);
     }
 
-    windowToIdMap[pid] = windowList;
-    this._newWindowLoaded(myCount, windowToIdMap);
-}
-
-DDMClient.prototype._getIconForPid = async function (pid) {
-    await this.iconLoader;
-    const response = (await this.device.shellCommand(
-        "export CLASSPATH=/data/local/tmp/processicon.jar;exec app_process /system/bin ProcessIcon " + pid)).split("\n", 2);
-    if ("OKAY" != response[0]) {
-        throw "Unable to fetch icon";
+    #prefetchIconForPid(pid, iconId) {
+        if (this.iconCache[pid] == undefined) {
+            const iconGetter = this.#getIconForPid(pid);
+            const that = this;
+            iconGetter.then(v => {
+                iconGetter.value = v;
+                that.callbacks.iconLoaded(iconId, v);
+            });
+            this.iconCache[pid] = iconGetter;
+        }
     }
-    const r = createBlobFromDataUrl(response[1], "image/png");
 
-    // console.log("Loading icon for " + pid);
-
-    return r;
+    async #getIconForPid(pid) {
+        await this.iconLoader;
+        const response = (await this.device.shellCommand(
+            "export CLASSPATH=/data/local/tmp/processicon.jar;exec app_process /system/bin ProcessIcon " + pid)).split("\n", 2);
+        if ("OKAY" != response[0]) {
+            throw "Unable to fetch icon";
+        }
+        return createBlobFromDataUrl(response[1], "image/png");
+    }
 }
 
 function resetActiveState() {
@@ -453,6 +469,25 @@ function searializeNode(root) {
 }
 
 /**
+ * Merger to read all data as byte array.
+ */
+class ByteResponseMerger{
+    result = null;
+
+    #completed = false;
+    #decoder = new TextDecoder();
+
+    merge(data) {
+        this.result = this.result ? appendBuffer(this.result, data) : data;
+        this.#completed = this.#decoder.decode(data).endsWith("DONE\n");
+    }
+
+    isComplete() {
+        return this.#completed;
+    }
+}
+
+/**
  * Controller based on view service
  */
 class ViewServiceController {
@@ -466,8 +501,12 @@ class ViewServiceController {
     }
     async loadViewList() {
         const stream = this.device.openStream("tcp:4939");
+
+        // Sometime the stream doesn't close, so close forcefully
+        let responseMerger = new TextResponseMerger();
+        responseMerger.isComplete = () => responseMerger.result.endsWith("\nDONE\n");
         stream.write("DUMP " + this.id + "\n");
-        const text = await stream.readAll();
+        const text = await stream.readAll(responseMerger);
         const result = deferred();
         parseViewData(text, CMD_PARSE_OLD_DATA | CMD_USE_PROPERTY_MAP, result);
         return await result;
@@ -480,7 +519,11 @@ class ViewServiceController {
     profileView(viewName) {
         const stream = this.device.openStream("tcp:4939");
         stream.write("PROFILE " + this.id + " " + viewName + "\n");
-        return stream.readAll();
+
+        // Sometime the stream doesn't close, so close forcefully
+        let responseMerger = new TextResponseMerger();
+        responseMerger.isComplete = () => responseMerger.result.endsWith("\nDONE\n");
+        return stream.readAll(responseMerger);
     }
 }
 

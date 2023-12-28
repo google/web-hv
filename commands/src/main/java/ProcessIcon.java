@@ -55,14 +55,19 @@ public class ProcessIcon {
     private static final int ICON_SIZE = 96;
 
     public static void main(String[] args) {
-        int pid = Integer.parseInt(args[0]);
         Context context = getContext();
         if (context == null) {
             System.out.println("FAIL");
             return;
         }
 
-        String packageName = getPackageName(context, pid);
+        String packageName = args[0];
+        try {
+            int pid = Integer.parseInt(args[0]);
+            packageName = getPackageName(context, pid);
+        } catch (NumberFormatException e) {
+            // Ignore
+        }
         if (packageName == null) {
             System.out.println("FAIL");
             return;
