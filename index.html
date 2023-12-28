@@ -41,6 +41,7 @@
     <script src="js/adb/adb_msg.js"></script>
     <script src="js/adb/crypto.js"></script>
     <script src="js/adb/adb.js"></script>
+    <script src="js/adb/adb_proxy.js"></script>
     <script src="js/ddmlib/ddmclient.js"></script>
     <script src="js/ddmlib/jdwp.js"></script>
     <script src="js/ddmlib/DataOutputStream.js"></script>
@@ -76,6 +77,16 @@
 
             <h3 id="connected-devices-title">Authorized devices</h3>
             <div class="activity-list" id="connected-devices"></div>
+
+            <h3 style="margin-top: 60px;" id="proxy-devices-title">Adb Proxy devices</h3>
+            <div id="proxy_input">
+                <a href="proxy/webhv-proxy.jar" download style="color: var(--text-color);">Download the WebHV proxy</a>, and run it using the following command:
+                <div id="proxy-copy-command">java -jar webhv-proxy.jar</div>
+                <div>Paste the handshake key here: <input id="proxy-handshake-key" /></div>
+                <button onclick="trackProxyDevices()">Connect</button>
+            </div>
+            <div class="activity-list" id="proxy-devices"></div>
+
         </div>
 
         <!-- Hierarchy View -->

@@ -69,6 +69,15 @@ $(function () {
 		navigator.usb.removeEventListener("disconnect", refreshConnectedDevices);
 	});
 
+	// Load proxy devices
+	$("#proxy-handshake-key").val(localStorage.webProxyKey);
+	trackProxyDevices()
+
+	$("#proxy-copy-command").click(function() {
+		navigator.clipboard.writeText($("#proxy-copy-command").text());
+		toast("Command copied");
+	});
+
 	if (isDarkTheme()) {
 		switchTheme();
 	}
@@ -88,6 +97,79 @@ function refreshConnectedDevices() {
 			$("<label>").text("serial: " + d.serialNumber).appendTo(subText);
 		}
 	});
+}
+
+var trackingSocketConnection;
+
+function trackProxyDevices() {
+	var authKey = WEB_PROXY_VERSION + "-" + $("#proxy-handshake-key").val();
+	localStorage.webProxyKey = $("#proxy-handshake-key").val();
+
+	if (trackingSocketConnection) {
+		trackingSocketConnection.close();
+	}
+
+	var w = new WebSocket("ws://localhost:8000/track-devices", [authKey]);
+	w.onmessage = refreshProxyDevices.bind(null, authKey);
+
+	var howProxyHelp = function() {
+		$("#proxy-devices").empty();
+		$("#proxy_input, #proxy-devices-title").show();
+	}
+
+	w.onerror = howProxyHelp;
+	w.onclose = function(d) {
+		if (d.code == STANDARD_ERROR_CODE && d.reason) {
+			toast(d.reason)
+		}
+		howProxyHelp();
+	}
+	ActiveState.push(w.close.bind(w));
+	trackingSocketConnection = w;
+}
+
+async function refreshProxyDevices(authKey) {
+	var s = new WebSocketStream(new WebSocket("ws://localhost:8000/devices-l", [authKey]));
+	var response = await s.readAll();
+
+	var devices = response.substring(4).split("\n");
+
+	const container = $("#proxy-devices").empty();
+	$("#proxy_input, #proxy-devices-title").hide();
+
+	for (let i = 0; i < devices.length; i++) {
+		const p = devices[i].indexOf(" ");
+		if (p <= 0) continue;
+
+		$("#proxy-devices-title").show();
+
+		const name = devices[i].substring(p + 1).trim()
+		const model = name.substring(name.indexOf("model:") + 6).split(" ", 1)[0]
+		const device = name.substring(name.indexOf("device:") + 7).split(" ", 1)[0]
+
+		const serial = devices[i].substring(0, p + 1).trim()
+		const d = {
+			name: name,
+			manufacturerName: model,
+			productName: device,
+			serial: serial,
+			authKey: authKey
+		}
+
+		const entry = $("<div>").data("device", d).appendTo(container).click(proxyDeviceClicked).addClass("entry");
+		$('<div class="title">').text(d.manufacturerName + " " + d.productName).appendTo(entry);
+
+		const subText = $('<div class="subtext">').appendTo(entry);
+		$("<label>").text("serial: " + d.serial).appendTo(subText);
+		console.log(device, serial, model);
+	}
+}
+
+function proxyDeviceClicked() {
+	const d = $(this).data("device");
+	console.log(d);
+	adbDevice = new WebProxyDevice(d);
+	onDeviceStateChange(STATE_CONNECTED_DEVICE);
 }
 
 function verifiedDeviceClicked() {

@@ -1,0 +1,11 @@
+**/.gradle/*
+**/gradle/*
+**/gradlew*
+**/local.properties
+**/bin/**
+**/.idea/*
+
+**/*.iml
+**/.DS_Store
+**/build/*
+.vscode/*
