@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import android.app.ActivityThread;
 import android.app.Instrumentation;
+import android.content.Context;
 import android.hardware.input.InputManager;
+import android.hardware.input.InputManagerGlobal;
 import android.os.Looper;
 import android.os.SystemClock;
 import android.util.SparseLongArray;
 import android.view.InputDevice;
+import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.WindowManagerGlobal;
@@ -35,6 +39,7 @@ public class InputServer implements Runnable {
 
     private final Instrumentation mIt = new Instrumentation();
     private final SparseLongArray mKeyDowntimes = new SparseLongArray();
+    private final InputInjector inputInjector = getInputInjector();
 
     private long mLastMotionDowntime = -1;
     private final Queue<InputItem> mInputQueue = new ArrayDeque<>();
@@ -231,8 +236,7 @@ public class InputServer implements Runnable {
                 WindowManagerGlobal.getWindowManagerService()
                         .syncInputTransactions(true /*waitForAnimations*/);
             }
-            InputManager.getInstance().injectInputEvent(
-                    event, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
+            inputInjector.inject(event, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
 
             if (syncAfter) {
                 WindowManagerGlobal.getWindowManagerService()
@@ -241,6 +245,25 @@ public class InputServer implements Runnable {
         } catch (Throwable e) {
             mIt.sendPointerSync(event);
         }
+    }
+
+    private interface InputInjector {
+        boolean inject(InputEvent event, int mode);
+    }
+
+    private static InputInjector getInputInjector() {
+        InputManager im = null;
+        try {
+            Context c = ActivityThread.systemMain().getSystemContext();
+            im = c.getSystemService(InputManager.class);
+        } catch (Error e) { }
+        if (im == null) {
+            im = InputManager.getInstance();
+        }
+
+        return im == null
+                ? InputManagerGlobal.getInstance()::injectInputEvent
+                : im::injectInputEvent;
     }
 
     public static void main(String[] args) throws Exception {
