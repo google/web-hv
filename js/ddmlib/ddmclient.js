@@ -498,6 +498,9 @@ class ViewServiceController {
         this.sdk_version = appInfo.sdk_version;
         this.use_new_api = false;
         this.device = appInfo.device;
+        if (this.sdk_version < 34) {
+            this.customCommand = null;
+        }
     }
     async loadViewList() {
         const stream = this.device.openStream("tcp:4939");
@@ -524,6 +527,22 @@ class ViewServiceController {
         let responseMerger = new TextResponseMerger();
         responseMerger.isComplete = () => responseMerger.result.endsWith("\nDONE\n");
         return stream.readAll(responseMerger);
+    }
+    customCommand(viewName, commandData) {
+        // Separate the method name from rest of the data
+        const inputStream = new DataInputStream(new Uint8Array(commandData));
+        const methodName = inputStream.readStr();
+
+        // Convert params to base64
+        var params = '';
+        for (var i = inputStream.pos; i < commandData.length; i++) {
+            params += String.fromCharCode( commandData[ i ] );
+        }
+        params = window.btoa(params);
+
+        const stream = this.device.openStream("tcp:4939");
+        stream.write(`INVOKE_METHOD ${this.id} ${viewName} ${methodName} ${params} \n`);
+        return stream.readAll(new ByteResponseMerger());
     }
 }
 
