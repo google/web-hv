@@ -216,14 +216,25 @@ function createDecoderPlayer(container) {
     return ret;
 }
 
-const deviceMirrorAction = async function() {
-    backStack.add("?mode=mirror");
+const deviceMirrorAction = async function(extendDisplay) {
+    if (extendDisplay && !extendDisplay.toUrlParams) {
+        extendDisplay = null;
+    }
+    if (extendDisplay) {
+        backStack.add(extendDisplay.toUrlParams());
+    } else {
+        backStack.add("?mode=mirror");
+    }
     $("#main-progress").show();
     $("#device-list-content").empty().hide();
     $("#darkThemeSwitch").remove();
     $("#dmirrorview").removeClass("hide").removeClass("hidden");
 
-    const player = window.VideoDecoder ? createDecoderPlayer("#dmirrorview .frame") : createJmuxPlayer("#dmirrorview .frame");
+    const playerContainer = $("#dmirrorview .frame").empty()
+    const videoMessage = $("<div>").text("If the video does not apper, try redrawing the screen by interacting with the device")
+        .appendTo(playerContainer)
+    // playerContainer.find("video, canvas").remove()
+    const player = window.VideoDecoder ? createDecoderPlayer(playerContainer) : createJmuxPlayer(playerContainer);
 
     resetActiveState();
     let inputChannelRunning = true;
@@ -235,19 +246,10 @@ const deviceMirrorAction = async function() {
         player.destroy();
     });
 
+    let createInputStream;
+
     async function startInputChannel() {
-        await adbDevice.sendFile("/data/local/tmp/inputserver.jar", "commands/inputserver.jar");
-        let stream;
-        function loopStream() {
-            stream = adbDevice.openStream(`shell:export CLASSPATH=/data/local/tmp/inputserver.jar;exec app_process /system/bin InputServer`);
-            stream.onReceiveWrite = r => stream.sendReady();
-            stream.onClose = function() {
-                if (inputChannelRunning) {
-                    loopStream();
-                }
-            }
-        }
-        loopStream();
+        let inputChannel = await createInputStream();
 
         player.el.mousedown(e => {
             const width = videoSizeFactor * player.videoWidth() / player.el.width();
@@ -259,7 +261,7 @@ const deviceMirrorAction = async function() {
             const sendEvent = function(code, ev) {
               const x = Math.round((ev.pageX - offsetX) * width);
               const y = Math.round((ev.pageY - offsetY) * height);
-              stream.write(`me:${code}:${x}:${y}:${Date.now()}\n`)
+              inputChannel.stream.write(`me:${code}:${x}:${y}:${Date.now()}\n`)
             }
 
             sendEvent("d", e);
@@ -323,7 +325,7 @@ const deviceMirrorAction = async function() {
                 }
             }
             const response = `ke:${e.type == 'keydown' ? 'd' : 'u'}:${e.altKey ? 1 : 0}:${e.ctrlKey ? 1 : 0}:${e.metaKey ? 1 : 0}:${e.shiftKey ? 1 : 0}:${code}\n`;
-            stream.write(response)
+            inputChannel.stream.write(response)
             e.preventDefault();
         });
     }
@@ -338,33 +340,76 @@ const deviceMirrorAction = async function() {
 
     player.onFirstFrame = function() {
         $("#main-progress").hide();
-        $("#video-message").remove();
+        videoMessage.remove();
         startInputChannel();
     }
 
-    // Get device size
-    let sizeArg = "";
-    const size = /\b(\d+)x(\d+)\b/.exec(await adbDevice.shellCommand("wm size"));
-    if (size) {
-        const w = Math.round(parseInt(size[1]) / 2);
-        const h = Math.round(parseInt(size[2]) / 2);
-        sizeArg = ` --size=${w}x${h}`;
-        videoSizeFactor = 2;
-    }
-
-    function connectStream() {
-        if (!inputChannelRunning) {
-            return;
+    if (!extendDisplay) {
+        createInputStream = async function() {
+            await adbDevice.sendFile("/data/local/tmp/inputserver.jar", "commands/inputserver.jar");
+    
+            let result = { };
+            function loopStream() {
+                result.stream = adbDevice.openStream(`shell:export CLASSPATH=/data/local/tmp/inputserver.jar;exec app_process /system/bin InputServer`);
+                result.stream.onReceiveWrite = r => result.stream.sendReady();
+                result.stream.onClose = function() {
+                    if (inputChannelRunning) {
+                        loopStream();
+                    }
+                }
+            }
+            loopStream();
+            return result;
         }
-        console.log("Connecting to device stream");
-        const stream = adbDevice.openStream(`shell:screenrecord ${sizeArg} --output-format=h264 - `);
-        stream.onReceiveWrite = function (result) {
-            stream.sendReady();
-            player.feed(result);
-        };
 
-        stream.onClose = connectStream;
-        stream.sendReady();
+        // Get device size
+        let sizeArg = "";
+        const size = /\b(\d+)x(\d+)\b/.exec(await adbDevice.shellCommand("wm size"));
+        if (size) {
+            const w = Math.round(parseInt(size[1]) / 2);
+            const h = Math.round(parseInt(size[2]) / 2);
+            sizeArg = ` --size=${w}x${h}`;
+            videoSizeFactor = 2;
+        }
+
+        function connectStream() {
+            if (!inputChannelRunning) {
+                return;
+            }
+            console.log("Connecting to device stream");
+            const stream = adbDevice.openStream(`shell:screenrecord ${sizeArg} --output-format=h264 - `);
+            stream.onReceiveWrite = function (frameData) {
+                stream.sendReady();
+                player.feed(frameData);
+            };
+
+            stream.onClose = connectStream;
+            stream.sendReady();
+        }
+        connectStream();
+    } else {
+        let result = { }
+        await adbDevice.sendFile("/data/local/tmp/inputserver.jar", "commands/inputserver.jar");
+
+        createInputStream = async function() {
+            return result;
+        }
+
+        function connectStream() {
+            if (!inputChannelRunning) {
+                return;
+            }
+            console.log("Connecting to device stream");
+            result.stream = adbDevice.openStream(`shell:export CLASSPATH=/data/local/tmp/inputserver.jar;exec app_process /system/bin DisplayServer ${extendDisplay.width} ${extendDisplay.height} ${extendDisplay.dpi}`);
+            result.stream.onReceiveWrite = function (frameData) {
+                result.stream.sendReady();
+                player.feed(frameData);
+            };
+
+            result.stream.onClose = connectStream;
+            result.stream.sendReady();
+        }
+        connectStream();
+
     }
-    connectStream();
 }

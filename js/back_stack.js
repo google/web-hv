@@ -10,6 +10,23 @@ var backStack = (function() {
             $("#main-title-wrapper").html("<h2>Mirror android screen</h2>");
             activityListAction = deviceMirrorAction;
             base += "?mode=mirror";
+        } else if (urlParams.get("mode") == "extend") {
+            try {
+                let width = parseInt(urlParams.get("width"))
+                let height = parseInt(urlParams.get("height"))
+                let dpi = parseInt(urlParams.get("dpi"))
+                if (width <= 0 || isNaN(width) || height <= 0 || isNaN(height) || dpi <= 0|| isNaN(dpi)) {
+                    throw "Invalid device config"
+                }
+                let extendDisplay = new ExtendedDisplay(width, height, dpi)
+
+                // Switch to mirror mode
+                $("#main-title-wrapper").html("<h2>Android Extended display</h2>");
+                activityListAction = () =>  deviceMirrorAction(extendDisplay);
+                base += extendDisplay.toUrlParams();
+            } catch(e) {
+                toast("Unable to start extend display: " + e);
+            }
         }
 
         history.replaceState({}, "", base);

@@ -4,38 +4,21 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.3.0-alpha07'
+        classpath 'com.android.tools.build:gradle:8.3.2'
     }
 }
 
 apply plugin: 'com.android.library'
 
-// Use  the  following command to compile the jar file:
-// d8 <.class files> --min-api 24 --release --output <output.jar>
 android {
+    namespace 'com.google.tools.webhv'
     compileSdkVersion "android-UmainForTreecae3"
-    buildToolsVersion "34.0.0"
-    namespace = "com.google.tools.webhv"
 
     defaultConfig {
-        minSdk 28
+        minSdk 24
         targetSdk 34
         versionCode 1
         versionName "1.0"
-    }
-
-    sourceSets {
-        main {
-            manifest.srcFile 'AndroidManifest.xml'
-        }
-    }
-
-    lintOptions {
-        abortOnError false
-    }
-
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
     }
 
     compileOptions {

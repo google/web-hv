@@ -113,6 +113,39 @@ function showContext(menu, callback, e) {
     showPopup(e, elementFactory);
 }
 
+function showInputPopup(e, value, placeHolder) {
+    let input;
+    let errorContainer;
+    const popup = showPopup(e, function(el, hideMenu) {
+        input = $(`<input type=search placeholder='${placeHolder}'>`)
+            .appendTo(el)
+            .keydown(function (e) {
+                if (e.keyCode == 27) {
+                    e.preventDefault();
+                    hideMenu();
+                }
+            });
+        errorContainer = $("<div class='custom-command-error-wrapper'>").appendTo(el);
+    })
+    popup.inputBox = input;
+
+    input.val(value).focus().select();
+    input
+        .keyup(function (e) {
+            if (popup.ignoreNextKeyUp) {
+                popup.ignoreNextKeyUp = false;
+                return;
+            }
+            if (e.keyCode == 13) {
+                popup.trigger("value_input", [$(this).val(), e.shiftKey])
+            }
+        })
+        .on("input", () => errorContainer.empty())
+        .blur(() => errorContainer.empty());
+    popup.get(0).showError = e => errorContainer.showError(e);
+    return popup;
+}
+
 /**
  * @param {*} e the click event
  * @param {*} elementFactory a function which tasks 2 arguments: <container element>, <hide-menu-method>
@@ -138,6 +171,7 @@ function showPopup(e, elementFactory) {
     }
 
     elementFactory(el, hideMenu);
+    wrapper.get(0).hideMenu = hideMenu;
     el.show().css({
         left: Math.min(e.pageX, $(document).width() - el.width() - 10),
         top: Math.min(e.pageY, $(document).height() - el.height() - 10)});
@@ -176,4 +210,25 @@ function base64ToUint8Array(base64String) {
         bytes[i] = ascii;
     }
     return bytes
+}
+
+class ExtendedDisplay {
+    constructor(width, height, dpi) {
+        this.width = width;
+        this.height = height;
+        this.dpi = dpi;
+    }
+    isSameAs(other) {
+        return this.width == other.width && this.height == other.height && this.dpi == other.dpi;
+    }
+    toMenuItem() {
+        return {
+            text: `${this.width} x ${this.height} @ ${this.dpi} dpi`,
+            display: this,
+            id: 100
+        }
+    }
+    toUrlParams() {
+        return `?mode=extend&width=${this.width}&height=${this.height}&dpi=${this.dpi}`
+    }
 }

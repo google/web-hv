@@ -19,6 +19,7 @@ import android.hardware.input.InputManager;
 import android.hardware.input.InputManagerGlobal;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Log;
 import android.util.SparseLongArray;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -35,6 +36,8 @@ import java.util.concurrent.Executors;
 
 public class InputServer implements Runnable {
 
+    private static final String TAG = "InputServer";
+
     private static final ExecutorService COMMAND_EXECUTOR = Executors.newSingleThreadExecutor();
 
     private final Instrumentation mIt = new Instrumentation();
@@ -44,10 +47,16 @@ public class InputServer implements Runnable {
     private long mLastMotionDowntime = -1;
     private final Queue<InputItem> mInputQueue = new ArrayDeque<>();
 
+    private final int mDisplayID;
+
+    public InputServer(int displayID) {
+        mDisplayID = displayID;
+    }
+
     public void onServerMessage(String msg) {
         String[] parts = msg.split(":");
         if (parts.length < 1) {
-            System.out.println("Invalid message: " + msg);
+            Log.e(TAG, "Invalid message: " + msg);
             return;
         }
 
@@ -64,7 +73,7 @@ public class InputServer implements Runnable {
                 break;
         }
         if (!handled) {
-            System.out.println("Invalid message: " + msg);
+            Log.e(TAG, "Invalid message: " + msg);
         }
     }
 
@@ -96,6 +105,7 @@ public class InputServer implements Runnable {
 
         long downTime = mKeyDowntimes.get(code, now);
         KeyEvent ke = new KeyEvent(downTime, now, action, code, 0, meta);
+        updateEvent(ke);
         COMMAND_EXECUTOR.execute(new KeyCommand(ke));
         return true;
     }
@@ -224,6 +234,7 @@ public class InputServer implements Runnable {
     }
 
     public void sendPointerSync(MotionEvent event) {
+        updateEvent(event);
         try {
             if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) == 0) {
                 event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
@@ -244,6 +255,12 @@ public class InputServer implements Runnable {
             }
         } catch (Throwable e) {
             mIt.sendPointerSync(event);
+        }
+    }
+
+    private void updateEvent(InputEvent event) {
+        if (mDisplayID != -1) {
+            event.setDisplayId(mDisplayID);
         }
     }
 
@@ -268,9 +285,8 @@ public class InputServer implements Runnable {
 
     public static void main(String[] args) throws Exception {
         Looper.prepareMainLooper();
-        InputServer server = new InputServer();
+        InputServer server = new InputServer(-1);
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Ready");
         while (true) {
             server.onServerMessage(reader.readLine());
         }

@@ -40,9 +40,67 @@ var activityListAction = function (initializer, skipPush) {
         }
     }
 
-    const renderActivities = function(container, list) {
+    const showExtendDisplay = function() {
+        const defaulValue = new ExtendedDisplay(2560, 1600, 320);
+        let favorites = []
 
-        const buttonbar = $("<div class='button-bar'>").css({display: "flex"}).appendTo(container);
+        if (localStorage.favoriteDisplays) {
+            try {
+                const tmp = JSON.parse(localStorage.favoriteDisplays);
+                if (tmp && tmp.constructor == Array) {
+                    for (var i = 0; i < tmp.length; i++) {
+                        if (tmp[i].width > 0 && tmp[i].height > 0 && tmp[i].dpi > 0) {
+                            let thisDisplay = new ExtendedDisplay(tmp[i].width, tmp[i].height, tmp[i].dpi);
+                            if (!defaulValue.isSameAs(thisDisplay) && favorites.length < 3 && !favorites.find(e => thisDisplay.isSameAs(e))) {
+                                favorites.push(thisDisplay);
+                            }
+                        }
+                    }
+                }
+            } catch(e) { }
+        }
+
+        const menu = [
+            { text: "Extend Display", disabled: true },
+            defaulValue.toMenuItem(),
+            ...favorites.map(e => e.toMenuItem()),
+            null,
+            { text: "Custom size", id: 1 }
+        ];
+        const offset = $(this).offset();
+        const popupEvent = {pageX: offset.left, pageY: offset.top + $(this).height()};
+
+        showContext(menu, function (el) {
+                if (this.id == 1) {
+                    showInputPopup(popupEvent, "1280 x 720 @ 240 dpi", "<width> x <height> @<density> dpi")
+                        .on("value_input", function(e, val) {
+                            let parsed = val.match(/^\s*(\d+)\s*x\s*(\d+)\s*\@\s*(\d+)\s*dpi\s*$/)
+                            if (!parsed) {
+                                this.showError("Invalid display description")
+                                return;
+                            }
+                            extendDisplay(new ExtendedDisplay(parseInt(parsed[1]), parseInt(parsed[2]), parseInt(parsed[3])))
+                            this.hideMenu();
+                        })
+                } else if (this.display) {
+                    extendDisplay(this.display)
+                }
+            },
+            popupEvent);
+
+        const extendDisplay = function(thisDisplay) {
+            if (!defaulValue.isSameAs(thisDisplay)) {
+                favorites = favorites.filter(e => !defaulValue.isSameAs(e))
+                favorites.unshift(thisDisplay)
+                localStorage.favoriteDisplays = JSON.stringify(favorites)
+            }
+
+            deviceMirrorAction(thisDisplay);
+        }
+    }
+
+    const renderActivities = function(container, list) {
+        const buttonbar = $("<div class='button-bar'>").appendTo(container);
         if (list.use_new_api) {
             newApiChk = $('<input type="checkbox" />');
             $("<label class='old-api'>").appendTo(buttonbar).append(newApiChk).append($("<span class='slider'>")).append($("<span class='text'>").text("Load custom properties"));
@@ -51,11 +109,18 @@ var activityListAction = function (initializer, skipPush) {
         }
         if (adbDevice) {
             $("<div>").css({flexGrow: 1}).appendTo(buttonbar);
-            $("<button>").text("Mirror Display").appendTo(buttonbar).click(deviceMirrorAction);
+            $("<div>").addClass("button-group").appendTo(buttonbar)
+                .append($("<button>").text("Mirror Display").click(e => deviceMirrorAction()))
+                .append($("<button>").html("&#58821;")
+                    .css({
+                        fontFamily: "Icon-Font",
+                        float: "right",
+                        padding: "0 6px",
+                        fontSize: "20px"
+                    }).click(showExtendDisplay));
         }
 
         container = $("<div>").appendTo(container).addClass("activity-list");
-
         const setupOneListItem = function(l) {
             const entry = $("<div>").data("appInfo", l).appendTo(container).click(startHView).addClass("entry");
 

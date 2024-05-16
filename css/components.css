@@ -230,7 +230,6 @@ button {
     color: var(--text-color);
 }
 
-
 button.icon_btn {
     padding-left: 0px;
 }
@@ -251,6 +250,24 @@ button:active {
     box-shadow: inset 0 0 100px 100px var(--hover-bg-color), 0 0 1px 2px rgba(0, 0, 0, 0.4);
     transform: scale(0.98);
 }
+
+
+.button-bar {
+    display: flex;
+    margin-bottom: 5px;
+}
+.button-group > button {
+    box-shadow: none;
+    border-radius: 0px;
+    margin-right:1px
+}
+.button-group > button:first-child {
+    border-radius: 4px 0px 0px 4px;
+}
+.button-group > button:last-child {
+    border-radius: 0px 4px 4px 0px;
+}
+
 
 .contextmenu input[type=search] {
     padding: 2px 15px;

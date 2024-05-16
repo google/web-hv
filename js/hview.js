@@ -1091,29 +1091,8 @@ $(function () {
     /** ********************** Node search ********************** */
     let lastNodeSearchText = "";
     $("#btn-search-node").click(function(e) {
-        let searchInput;
-        const elementFactory = function(el, hideMenu) {
-            searchInput = $("<input type=search placeholder='Search node'>").appendTo(el);
-
-            // Use key up for enter, so that the user has time to press shift key
-            searchInput.keyup(function (e) {
-                if (e.keyCode == 13) {
-                    nodeSearch(e.shiftKey ? -1 : 1);
-                }
-            });
-            searchInput.keydown(function (e) {
-                if (e.keyCode == 27) {
-                    e.preventDefault();
-                    hideMenu();
-                }
-            });
-        }
-        showPopup(e, elementFactory);
-        searchInput.val(lastNodeSearchText).focus().select();
-
-        const nodeSearch = function (dir) {
-            let query = searchInput.val();
-            if (query == "") return;
+        showInputPopup(e, lastNodeSearchText, "Search node").on("value_input", function(e, query, hasShift) {
+            let dir = hasShift ? -1 : 1;
             lastNodeSearchText = query;
             query = query.toLocaleLowerCase();
 
@@ -1140,95 +1119,71 @@ $(function () {
                     return;
                 }
             }
-        }
+            this.showError("No elements found");
+        })
     });
 
     /** ********************** Custom command ********************** */
-    let ignoreNextKeyUp = false;
-
     $("#btn-custom-command").click(function (e) {
-        let commandInput;
-        let errorContainer;
-        const elementFactory = function(el) {
-            commandInput = $("<input type=search placeholder='Custom command'>").appendTo(el);
-            errorContainer = $("<div class='custom-command-error-wrapper'>").appendTo(el);
-        }
-        const popup = showPopup(e, elementFactory);
-
-
+        const popup = showInputPopup(e, "", 'Custom command');
         if (viewMethodList != null) {
             // Setup auto complete
             const methodAutoComplete = new autoComplete({
-                selector: commandInput.get(0),
+                selector: popup.inputBox.get(0),
                 minChars: 1,
                 source: autoCompleteSource,
                 renderItem: suggestionRenderer,
-                onSelect: function () { ignoreNextKeyUp = true; }
+                onSelect: function () { popup.ignoreNextKeyUp = true; }
             });
             popup.on("popup_closed", function(e) {
                 console.log("Popup closed", e);
                 methodAutoComplete.destroy();
             });
         }
-
-        commandInput.focus().select();
-        commandInput.keyup(function (e) {
-            if (ignoreNextKeyUp) {
-                ignoreNextKeyUp = false;
+        popup.on("value_input", function(e, cmd) {
+            cmd = cmd.trim();
+            const m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^)]*)\);?$/);
+    
+            if (!m) {
+                this.showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
                 return;
             }
-            if (e.keyCode == 13) {
-                executeCommand($(this).val(), errorContainer);
-            }
-        }).on("input", function () {
-            errorContainer.empty();
-        }).blur(function () {
-            errorContainer.empty();
-        });
-    })
-
-    const executeCommand = function (cmd, errorContainer) {
-        cmd = cmd.trim();
-        const m = cmd.match(/^([a-zA-Z_0-9]+)\s*\(([^)]*)\);?$/);
-
-        if (!m) {
-            errorContainer.showError("Invalid method format: methodName(param1, param2...). eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
-            return;
-        }
-
-        const data = new DataOutputStream();
-        data.writeStr(m[1]);
-
-        if (m[2].trim() != "") {
-            const params = m[2].split(",");
-            data.writeInt(params.length);
-            for (let i = 0; i < params.length; i++) {
-                try {
-                    let p = params[i].trim().toLocaleLowerCase();
-
-                    if (p == "false" || p == "true") {
-                        // boolean
-                        data.writeStr("Z", true);
-                        data.writeByte(p == "false" ? 0 : 1);
-                    } else if (p.indexOf(".") > -1 || p.endsWith("f")) {
-                        // float
-                        p = parseFloat(p);
-                        data.writeStr("F", true);
-                        data.writeFloat(p);
-                    } else if (p.match(/^[+-]?(0x)?[0-9a-fA-F]+$/)) {
-                        p = parseInt(p);
-                        data.writeStr("I", true);
-                        data.writeInt(p);
-                    } else {
-                        throw "error"
+    
+            const data = new DataOutputStream();
+            data.writeStr(m[1]);
+    
+            if (m[2].trim() != "") {
+                const params = m[2].split(",");
+                data.writeInt(params.length);
+                for (let i = 0; i < params.length; i++) {
+                    try {
+                        let p = params[i].trim().toLocaleLowerCase();
+    
+                        if (p == "false" || p == "true") {
+                            // boolean
+                            data.writeStr("Z", true);
+                            data.writeByte(p == "false" ? 0 : 1);
+                        } else if (p.indexOf(".") > -1 || p.endsWith("f")) {
+                            // float
+                            p = parseFloat(p);
+                            data.writeStr("F", true);
+                            data.writeFloat(p);
+                        } else if (p.match(/^[+-]?(0x)?[0-9a-fA-F]+$/)) {
+                            p = parseInt(p);
+                            data.writeStr("I", true);
+                            data.writeInt(p);
+                        } else {
+                            throw "error"
+                        }
+                    } catch (e) {
+                        this.showError("Invalid paramater: [" + params[i].trim() + "]. eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
+                        return
                     }
-                } catch (e) {
-                    errorContainer.showError("Invalid paramater: [" + params[i].trim() + "]. eg: setEnabled(false), setVisibility(0), setAlpha(0.9f)");
                 }
             }
-        }
-        viewController.customCommand(selectedNode.name, data.data).catch(errorContainer.showError.bind(errorContainer));
-    }
+            viewController.customCommand(selectedNode.name, data.data).catch(this.showError.bind(this));
+        })
+    })
 
     let viewMethodList = null;
 
