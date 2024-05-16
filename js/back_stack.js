@@ -10,7 +10,7 @@ var backStack = (function() {
             $("#main-title-wrapper").html("<h2>Mirror android screen</h2>");
             activityListAction = deviceMirrorAction;
             base += "?mode=mirror";
-        } else if (urlParams.get("mode") == "extend") {
+        } else if (urlParams.get("mode") == "secondary") {
             try {
                 let width = parseInt(urlParams.get("width"))
                 let height = parseInt(urlParams.get("height"))
@@ -21,11 +21,11 @@ var backStack = (function() {
                 let extendDisplay = new ExtendedDisplay(width, height, dpi)
 
                 // Switch to mirror mode
-                $("#main-title-wrapper").html("<h2>Android Extended display</h2>");
+                $("#main-title-wrapper").html("<h2>Android secondary display</h2>");
                 activityListAction = () =>  deviceMirrorAction(extendDisplay);
                 base += extendDisplay.toUrlParams();
             } catch(e) {
-                toast("Unable to start extend display: " + e);
+                toast("Unable to start secondary display: " + e);
             }
         }
 

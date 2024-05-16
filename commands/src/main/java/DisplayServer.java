@@ -227,7 +227,7 @@ public class DisplayServer implements Handler.Callback {
                 Integer.parseInt(args[1]),
                 Integer.parseInt(args[2]));
         int displayId = displayServer.prepare().getDisplayId();
-        Log.d(TAG, "Extended display id " + displayId);
+        Log.d(TAG, "Secondary display id " + displayId);
         displayServer.start();
 
         InputServer inputServer = new InputServer(displayId);

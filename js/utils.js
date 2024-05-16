@@ -229,6 +229,6 @@ class ExtendedDisplay {
         }
     }
     toUrlParams() {
-        return `?mode=extend&width=${this.width}&height=${this.height}&dpi=${this.dpi}`
+        return `?mode=secondary&width=${this.width}&height=${this.height}&dpi=${this.dpi}`
     }
 }

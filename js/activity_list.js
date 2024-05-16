@@ -61,7 +61,7 @@ var activityListAction = function (initializer, skipPush) {
         }
 
         const menu = [
-            { text: "Extend Display", disabled: true },
+            { text: "Secondary Display", disabled: true },
             defaulValue.toMenuItem(),
             ...favorites.map(e => e.toMenuItem()),
             null,
