@@ -102,15 +102,13 @@ function refreshConnectedDevices() {
 var trackingSocketConnection;
 
 function trackProxyDevices() {
-	var authKey = WEB_PROXY_VERSION + "-" + $("#proxy-handshake-key").val();
-	localStorage.webProxyKey = $("#proxy-handshake-key").val();
-
 	if (trackingSocketConnection) {
 		trackingSocketConnection.close();
 	}
 
-	var w = new WebSocket("ws://localhost:8000/track-devices", [authKey]);
-	w.onmessage = refreshProxyDevices.bind(null, authKey);
+	var w = new WebSocket("ws://localhost:9167/track-devices-json");
+	w.onmessage = refreshProxyDevices.bind(null);
+	$("#authorize_proxy").hide()
 
 	var howProxyHelp = function() {
 		$("#proxy-devices").empty();
@@ -128,40 +126,54 @@ function trackProxyDevices() {
 	trackingSocketConnection = w;
 }
 
-async function refreshProxyDevices(authKey) {
-	var s = new WebSocketStream(new WebSocket("ws://localhost:8000/devices-l", [authKey]));
-	var response = await s.readAll();
+function handleApproveUrl(authUrl) {
+	const authPopup = window.open(authUrl, '_blank', 'width=500,height=500,resizable=no,status=no,location=no,toolbar=no,menubar=no')
+	let checkClosedInterval = setInterval(function() {
+		if (authPopup.closed) {
+			clearInterval(checkClosedInterval);
+			trackProxyDevices();
+		}
+	}, 500);
+}
 
-	var devices = response.substring(4).split("\n");
+async function refreshProxyDevices(event) {
+	var data = JSON.parse(event.data)
+
+	if (data.error) {
+		if (data.error.approveUrl) {
+			$("#authorize_proxy").unbind("click").show().click(handleApproveUrl.bind(null, data.error.approveUrl))
+		} else {
+			toast(data.error.message ? data.error.message : JSON.stringify(data.error))
+			console.log(data.error)
+		}
+		return
+	}
+	var devices = data.device
 
 	const container = $("#proxy-devices").empty();
 	$("#proxy_input, #proxy-devices-title").hide();
 
 	for (let i = 0; i < devices.length; i++) {
-		const p = devices[i].indexOf(" ");
-		if (p <= 0) continue;
-
+		const p = devices[i];
 		$("#proxy-devices-title").show();
 
-		const name = devices[i].substring(p + 1).trim()
-		const model = name.substring(name.indexOf("model:") + 6).split(" ", 1)[0]
-		const device = name.substring(name.indexOf("device:") + 7).split(" ", 1)[0]
-
-		const serial = devices[i].substring(0, p + 1).trim()
+		var props = p.adbProps ? p.adbProps : { }
 		const d = {
-			name: name,
-			manufacturerName: model,
-			productName: device,
-			serial: serial,
-			authKey: authKey
+			name: props.device,
+			manufacturerName: props.product,
+			productName: props.model,
+			serial: p.serialNumber,
 		}
 
-		const entry = $("<div>").data("device", d).appendTo(container).click(proxyDeviceClicked).addClass("entry");
-		$('<div class="title">').text(d.manufacturerName + " " + d.productName).appendTo(entry);
+		const entry = $("<div>").data("device", d).appendTo(container).addClass("entry");
+		if (p.approveUrl) {
+			$('<div class="title">').text("Web auth pending").appendTo(entry.click(handleApproveUrl.bind(null, p.approveUrl)));
+		} else {
+			$('<div class="title">').text(d.manufacturerName + " " + d.productName).appendTo(entry.click(proxyDeviceClicked));
+		}
 
 		const subText = $('<div class="subtext">').appendTo(entry);
 		$("<label>").text("serial: " + d.serial).appendTo(subText);
-		console.log(device, serial, model);
 	}
 }
 

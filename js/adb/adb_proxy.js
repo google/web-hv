@@ -25,10 +25,14 @@ class WebProxyDevice extends BaseAdbDevice {
     }
 
     openStream(command) {
-        const stream = new WebSocketStream(new WebSocket("ws://localhost:8000/" + this.device.serial + "/" + command, [this.device.authKey]))
+        var serialNumber = this.device.serial;
+        const stream = new WebSocketStream(new WebSocket("ws://localhost:9167/adb-json"));
         const localId = this.nextLocalId++;
         this.streams[localId] = stream;
         stream.onReceiveCloseInternal = this.#clearStream.bind(this, localId)
+        stream.write(JSON.stringify({
+            header: {serialNumber, command}
+        }))
         return stream;
     }
 

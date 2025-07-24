@@ -80,11 +80,9 @@
 
             <h3 style="margin-top: 60px;" id="proxy-devices-title">Adb Proxy devices</h3>
             <div id="proxy_input">
-                <a href="proxy/webhv-proxy.jar" download style="color: var(--text-color);">Download the WebHV proxy</a>, and run it using the following command:
-                <div id="proxy-copy-command">java -jar webhv-proxy.jar</div>
-                <div>Paste the handshake key here: <input id="proxy-handshake-key" /></div>
-                <button onclick="trackProxyDevices()">Connect</button>
+                <p>Get <a href="https://tools.google.com/dlpage/android_web_device_proxy/" style="color: var(--text-color);">Android Web Device Proxy</a> to enable sharing ADB connections with other development tools</p>
             </div>
+            <button id="authorize_proxy" class="hide">Authorize</button>
             <div class="activity-list" id="proxy-devices"></div>
 
         </div>
