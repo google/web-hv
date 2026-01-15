@@ -25,7 +25,6 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-import android.view.WindowManagerGlobal;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -239,20 +238,7 @@ public class InputServer implements Runnable {
             if ((event.getSource() & InputDevice.SOURCE_CLASS_POINTER) == 0) {
                 event.setSource(InputDevice.SOURCE_TOUCHSCREEN);
             }
-            final boolean syncBefore = event.getAction() == MotionEvent.ACTION_DOWN
-                    || event.isFromSource(InputDevice.SOURCE_MOUSE);
-            final boolean syncAfter = event.getAction() == MotionEvent.ACTION_UP;
-
-            if (syncBefore) {
-                WindowManagerGlobal.getWindowManagerService()
-                        .syncInputTransactions(true /*waitForAnimations*/);
-            }
             inputInjector.inject(event, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
-
-            if (syncAfter) {
-                WindowManagerGlobal.getWindowManagerService()
-                        .syncInputTransactions(true /*waitForAnimations*/);
-            }
         } catch (Throwable e) {
             mIt.sendPointerSync(event);
         }
@@ -273,9 +259,8 @@ public class InputServer implements Runnable {
         try {
             Context c = ActivityThread.systemMain().getSystemContext();
             im = c.getSystemService(InputManager.class);
-        } catch (Error e) { }
-        if (im == null) {
-            im = InputManager.getInstance();
+        } catch (Error e) {
+            // Ignore
         }
 
         return im == null
