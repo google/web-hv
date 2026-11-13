@@ -180,6 +180,31 @@ $(function () {
     })();
 
     /********************************* Filter properties *********************************/
+    const escapeHtml = function (str) {
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    const escapeRegExp = function (str) {
+        return str.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
+    }
+
+    /**
+     * Splits text using the provided regex (which must have a single capturing group)
+     * and returns an array of [part, isMatch] pairs.
+     */
+    const splitHighlight = function (text, re) {
+        const result = [];
+        text.split(re).forEach((part, i) => {
+            if (part) result.push([part, (i % 2) == 1]);
+        });
+        return result;
+    }
+
     const filterProperties = function () {
         const q = $("#pfilter").val().trim().toLocaleLowerCase();
         const sections = $(".pcontainer .expandable");
@@ -200,7 +225,7 @@ $(function () {
                 }
             });
         } else {
-            const re = new RegExp("(" + q.split(' ').join('|') + ")", "gi");
+            const re = new RegExp("(" + q.split(' ').filter(s => s).map(escapeRegExp).join('|') + ")", "gi");
             sections.each(function () {
                 let found = 0;
                 const left = this.lbox.children;
@@ -209,7 +234,18 @@ $(function () {
                     const child = $(left[i]).children().eq(1);
                     const itemText = child.text();
                     if (itemText.toLocaleLowerCase().indexOf(q) > -1) {
-                        child.html(itemText.replace(re, "<b>$1</b>"));
+                        // Build DOM nodes directly so that itemText is never parsed as HTML.
+                        const el = child[0];
+                        el.replaceChildren();
+                        splitHighlight(itemText, re).forEach(([part, isMatch]) => {
+                            if (isMatch) {
+                                const b = document.createElement("b");
+                                b.textContent = part;
+                                el.appendChild(b);
+                            } else {
+                                el.appendChild(document.createTextNode(part));
+                            }
+                        });
                         found++;
                         $(left[i]).show();
                         $(right[i]).show();
@@ -396,7 +432,7 @@ $(function () {
                     selectTag.name = p.name
                     const optionTag = optionProtoType.cloneNode()
                     optionTag.value = 'default'
-                    optionTag.innerHTML = value
+                    optionTag.textContent = value
                     selectTag.appendChild(optionTag)
 
                     if (viewController.density > 0) {
@@ -405,7 +441,7 @@ $(function () {
                             // probably a reasonable dimension
                             const sizeDpOption = optionProtoType.cloneNode()
                             sizeDpOption.value = 'size-dp'
-                            sizeDpOption.innerHTML = dp + " dp"
+                            sizeDpOption.textContent = dp + " dp"
                             selectTag.appendChild(sizeDpOption)
                         }
                     }
@@ -418,7 +454,7 @@ $(function () {
                             valueHex = toHex(valueU, 8);
                             const colorHexOption = optionProtoType.cloneNode()
                             colorHexOption.value = 'color-hex'
-                            colorHexOption.innerHTML = "#" + valueHex
+                            colorHexOption.textContent = "#" + valueHex
                             selectTag.appendChild(colorHexOption)
 
                             colorWellDiv = divProtoType.cloneNode()
@@ -438,7 +474,7 @@ $(function () {
                             valueHex = toHex(valueU);
                             const falgsHexOption = optionProtoType.cloneNode()
                             falgsHexOption.value = 'falgs-hex'
-                            falgsHexOption.innerHTML = "0x" + valueHex
+                            falgsHexOption.textContent = "0x" + valueHex
                             selectTag.appendChild(falgsHexOption)
                         }
                         const valuePref = valueTypeMap[p.name];
@@ -783,16 +819,16 @@ $(function () {
                         if (valueContainer.classList.contains(CLS_MULTI_TOGGLE)) {
                             valueContainer.querySelectorAll("option").forEach((it) => {
                                 if (it.value == "default") {
-                                    it.innerHTML = property.value
+                                    it.textContent = property.value
                                 } else if (it.value == "falgs-hex") {
-                                    it.innerHTML = "0x" + property.value.toString(16)
+                                    it.textContent = "0x" + property.value.toString(16)
                                 }
                                 // ints can also be "color-hex", but we don't need to consider
                                 // that until time-lapse data contains color information.
                             })
                         } else {
                             // Non-multi-toggle data is currently limited to strings and booleans
-                            valueContainer.innerHTML = property.value
+                            valueContainer.textContent = property.value
                         }
                     })
                     selectedNode = newSelectedNode
@@ -1198,9 +1234,14 @@ $(function () {
 
     const suggestionRenderer = function (item, search) {
         // escape special characters
-        search = search.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&');
-        const re = new RegExp("(" + search.split(' ').join('|') + ")", "gi");
-        return '<div class="autocomplete-suggestion" data-val="' + item[0] + '">' + item[0].replace(re, "<b>$1</b>") + "(" + item[1] + ")" + '</div>';
+        const re = new RegExp("(" + search.split(' ').filter(s => s).map(escapeRegExp).join('|') + ")", "gi");
+        const name = String(item[0]);
+        // The autocomplete library expects an HTML string, so escape all device-supplied values.
+        const highlighted = splitHighlight(name, re)
+            .map(([part, isMatch]) => isMatch ? "<b>" + escapeHtml(part) + "</b>" : escapeHtml(part))
+            .join("");
+        return '<div class="autocomplete-suggestion" data-val="' + escapeHtml(name) + '">'
+            + highlighted + "(" + escapeHtml(item[1]) + ")" + '</div>';
     }
 
     const loadSuggestions = async function (device) {
